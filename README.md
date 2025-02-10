@@ -157,3 +157,22 @@ Please refer to [contributing guide](https://ui.docs.kafbat.io/development/contr
 
 As we're fully independent, team members contribute in their free time.
 Your support is crucial for us, if you wish to sponsor us, take a look [here](https://github.com/sponsors/kafbat) 
+
+
+```shell
+./mvnw clean install -Dmaven.test.skip=true -Ddocker.skip=true -Pprod
+export $(grep -v '^#' /Users/adam.jozwik/git/css-kafka-ui/.password_envs | xargs -0)
+java -Dspring.config.additional-location=../css-kafka-ui/config/config-gen.yml --add-opens java.rmi/javax.rmi.ssl=ALL-UNNAMED -jar api/target/api-0.0.1-SNAPSHOT.jar
+http://localhost:8080/
+
+
+#repo
+git remote add upstream https://github.com/kafbat/kafka-ui.git
+git fetch upstream
+git merge upstream/main
+
+git push -f origin cb52c0648d1549c67ff8b3df8204567dcde6a489:main
+
+Locally, do the same:
+git reset --hard cb52c0648d1549c67ff8b3df8204567dcde6a489
+```
