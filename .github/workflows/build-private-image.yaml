@@ -2,13 +2,6 @@ name: "Infra: Build Private Image"
 
 on:
   workflow_dispatch:
-  pull_request:
-    types: ['labeled']
-
-permissions:
-  id-token: write
-  contents: read
-  pull-requests: write
 
 jobs:
   build:
@@ -20,11 +13,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           token: ${{ github.token }}
-      - name: get branch name
-        id: extract_branch
-        run: |
-          tag='${{ github.event.pull_request.number }}'
-          echo "tag=${tag}" >> $GITHUB_OUTPUT
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -38,24 +26,27 @@ jobs:
           ./mvnw -B -V -ntp clean package -Pprod -DskipTests
           export VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-      - uses: sainsburys-tech/bosun-actions-setup@v1
-        name: Setup
-        id: setup
+          export TAGS=$(echo "539613588543.dkr.ecr.eu-west-1.amazonaws.com/css-kafka/kafbat-ui:${VERSION}")
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Cache Docker layers
+        uses: actions/cache@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          job-name: "build / build"
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
       - name: Build and push
-        id: buildpush
-        uses: docker/build-push-action@v2
+        id: docker_build_and_push
+        uses: docker/build-push-action@v5
         with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: api
           push: true
+          tags: ${{ steps.build.outputs.tags }}
           build-args: |
             JAR_FILE=api-${{ steps.build.outputs.version }}.jar
-          tags: ${{ fromJson(steps.setup.outputs.dockerParams).tags }}
-          context: ${{ fromJson(steps.setup.outputs.dockerParams).context }}/api
-      - name: make comment with private deployment link
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            Image published at ${{ fromJson(steps.setup.outputs.dockerParams).tags }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache

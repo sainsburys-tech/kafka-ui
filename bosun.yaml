@@ -1,4 +1,0 @@
-bosun:
-  deployment:
-    config:
-      serviceName: kafbat
