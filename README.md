@@ -165,7 +165,13 @@ export $(grep -v '^#' /Users/adam.jozwik/git/css-kafka-ui/.password_envs | xargs
 java -Dspring.config.additional-location=../css-kafka-ui/config/config-gen.yml --add-opens java.rmi/javax.rmi.ssl=ALL-UNNAMED -jar api/target/api-0.0.1-SNAPSHOT.jar
 http://localhost:8080/
 
+./mvnw clean install -Dmaven.test.skip=true -Pprod
 
+
+https://539613588543.dkr.ecr.eu-west-1.amazonaws.com/v2/css-kafka/kafbat-ui/blobs/sha256:463fb7761ab7870f5a239f4eecc3097c0c2be1dee70eb4ce0c5fd58376a8d261
+
+ 
+docker pull --platform linux/x86_64 images.int.dev-ie-core.jspaas.uk/made-is/token-manager:2.7
 #repo
 git remote add upstream https://github.com/kafbat/kafka-ui.git
 git fetch upstream
