@@ -1,0 +1,4 @@
+bosun:
+  deployment:
+    config:
+      serviceName: kafka-ui
