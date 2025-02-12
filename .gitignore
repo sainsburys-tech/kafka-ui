@@ -43,3 +43,4 @@ build/
 
 /docker/*.override.yaml
 /e2e-tests/allure-results/
+.java-version
