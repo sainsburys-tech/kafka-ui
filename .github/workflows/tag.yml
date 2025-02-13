@@ -1,4 +1,4 @@
-name: "Infra: Release: AWS Marketplace Publisher"
+name: "Infra: Tag"
 on:
   workflow_dispatch:
   pull_request:
