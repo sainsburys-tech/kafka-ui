@@ -1,6 +1,7 @@
 name: "Infra: Tag"
 on:
   workflow_dispatch:
+
   pull_request:
     branches:
       - sainsburys
@@ -9,7 +10,7 @@ on:
 
 jobs:
   tag:
-    if: github.event.pull_request.merged == true
+    if: ${{ (github.event.pull_request.merged == true) || (github.event_name == 'workflow_dispatch') }}
     runs-on:
       - self-hosted
       - build
