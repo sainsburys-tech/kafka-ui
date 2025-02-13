@@ -18,7 +18,6 @@ jobs:
         with:
           ref: sainsburys
       - name: default_branch - Create an incremental release
-        if: ${{ github.event.repository.default_branch == env.REF }}
         run: |
           git config --global user.email "made@sainsburys.co.uk"
           git config --global user.name "Increment tag"
