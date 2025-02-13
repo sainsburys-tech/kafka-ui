@@ -45,7 +45,7 @@ export const ContentWrapper = styled.div`
 
 export const Title = styled.div`
   white-space: nowrap;
-  max-width: 160px;
+  max-width: ${({ theme }) => Number(theme.layout.navBarWidth.replaceAll('px', '')) - 70 + "px"};
   overflow: hidden;
   text-overflow: ellipsis;
 `;
