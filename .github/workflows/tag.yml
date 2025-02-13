@@ -1,7 +1,6 @@
 name: "Infra: Tag"
 on:
   workflow_dispatch:
-
   pull_request:
     branches:
       - sainsburys
