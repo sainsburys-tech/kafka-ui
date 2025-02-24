@@ -24,6 +24,20 @@ const EditorViewer: React.FC<EditorViewerProps> = ({
   try {
     return (
       <S.Wrapper>
+      {data.length > 1000000 ? (
+        <Editor
+          isFixedHeight
+          schemaType={schemaType}
+          name="schema"
+          value="The message is too large. We can’t display this message due to performance issues. However, you can copy to clipboard or save as a file."
+          setOptions={{
+            showLineNumbers: false,
+            maxLines: 2,
+            showGutter: false,
+          }}
+          readOnly
+        />
+        ) : (
         <Editor
           isFixedHeight
           schemaType={schemaType}
@@ -36,6 +50,7 @@ const EditorViewer: React.FC<EditorViewerProps> = ({
           }}
           readOnly
         />
+        )}
       </S.Wrapper>
     );
   } catch (e) {
