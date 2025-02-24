@@ -22,16 +22,10 @@ import PlusIcon from 'components/common/Icons/PlusIcon';
 import ActionButton from 'components/common/ActionComponent/ActionButton/ActionButton';
 
 import * as S from './List.styled';
-import {ControlPanelWrapper} from "../../common/ControlPanel/ControlPanel.styled";
-import Search from "../../common/Search/Search";
-import {useSearchParams} from "react-router-dom";
 
 const ACList: React.FC = () => {
   const { clusterName } = useAppParams<{ clusterName: ClusterName }>();
-  const [searchParams] = useSearchParams();
-  const aclList = useAcls(clusterName).data?.filter(
-    (acl) => acl.principal.match(searchParams.get('q') || '')
-  );
+  const { data: aclList } = useAcls(clusterName);
   const { deleteResource } = useDeleteAcl(clusterName);
   const modal = useConfirm(true);
   const theme = useTheme();
@@ -168,9 +162,6 @@ const ACList: React.FC = () => {
           <PlusIcon /> Create ACL
         </ActionButton>
       </PageHeading>
-      <ControlPanelWrapper hasInput>
-        <Search placeholder="Search by Principal Name" />
-      </ControlPanelWrapper>
       <Table
         columns={columns}
         data={aclList ?? []}
