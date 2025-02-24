@@ -1,11 +1,11 @@
 name: "Infra: Tag"
 on:
   workflow_dispatch:
-  pull_request:
-    branches:
-      - sainsburys
-    types:
-      - closed
+#  pull_request:
+#    branches:
+#      - sainsburys
+#    types:
+#      - closed
 
 jobs:
   tag:
@@ -15,8 +15,8 @@ jobs:
       - build
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: sainsburys
+#        with:
+#          ref: sainsburys
       - name: default_branch - Create an incremental release
         run: |
           git config --global user.email "made@sainsburys.co.uk"
