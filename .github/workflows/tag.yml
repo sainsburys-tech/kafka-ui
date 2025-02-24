@@ -15,8 +15,8 @@ jobs:
       - build
     steps:
       - uses: actions/checkout@v4
-#        with:
-#          ref: sainsburys
+        with:
+          ref: sainsburys
       - name: default_branch - Create an incremental release
         run: |
           git config --global user.email "made@sainsburys.co.uk"
