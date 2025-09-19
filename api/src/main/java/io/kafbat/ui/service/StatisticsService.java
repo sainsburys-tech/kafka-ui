@@ -42,8 +42,10 @@ public class StatisticsService {
                         ).flatMap(t ->
                             scrapeMetrics(cluster, t.getT2(), description)
                                 .map(metrics -> createStats(description, t.getT1(), t.getT2(), metrics, ac)))))
-            .doOnError(e ->
-                log.error("Failed to collect cluster {} info", cluster.getName(), e))
+            .doOnError(e -> {
+              e.printStackTrace();
+              log.error("Failed to collect cluster {} info", cluster.getName(), e);
+            })
             .onErrorResume(t -> Mono.just(Statistics.statsUpdateError(t))));
   }
 
