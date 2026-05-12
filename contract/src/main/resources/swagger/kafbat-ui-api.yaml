@@ -871,7 +871,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TopicMessageEvent'
-
   /api/clusters/{clusterName}/topics/{topicName}/activeproducers:
     get:
       tags:
