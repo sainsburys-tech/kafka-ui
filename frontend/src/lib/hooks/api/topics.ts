@@ -3,7 +3,6 @@ import {
   messagesApiClient as messagesApi,
   consumerGroupsApiClient,
   messagesApiClient,
-  unmaskingApiClient as unmaskingApi,
 } from 'lib/api';
 import {
   useMutation,
@@ -13,7 +12,6 @@ import {
 } from '@tanstack/react-query';
 import {
   CreateTopicMessage,
-  UnmaskRequest,
   GetTopicDetailsRequest,
   GetTopicsRequest,
   Topic,
@@ -300,24 +298,6 @@ export function useSendMessage(props: GetTopicDetailsRequest) {
       onSuccess: () => {
         showSuccessAlert({
           message: `Message successfully sent`,
-        });
-        client.invalidateQueries(topicKeys.all(props.clusterName));
-      },
-      onError: (e) => {
-        showServerError(e as Response);
-      },
-    }
-  );
-}
-export function useDataUnmask(props: GetTopicDetailsRequest) {
-  const client = useQueryClient();
-  return useMutation(
-    (message: UnmaskRequest) =>
-      unmaskingApi.dataUnmasking({ ...props, unmaskRequest: message }),
-    {
-      onSuccess: () => {
-        showSuccessAlert({
-          message: `Data unmask request processed successfully.`,
         });
         client.invalidateQueries(topicKeys.all(props.clusterName));
       },
