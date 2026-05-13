@@ -52,12 +52,10 @@ public class KafkaClusterFactory {
   private final DataSize webClientMaxBuffSize;
   private final Duration responseTimeout;
   private final DynamoClusterProperties dynamoClusterProperties;
-
-  public KafkaClusterFactory(WebclientProperties webclientProperties, DynamoClusterProperties dynamoClusterProperties) {
   private final JmxMetricsRetriever jmxMetricsRetriever;
 
   public KafkaClusterFactory(WebclientProperties webclientProperties,
-                             JmxMetricsRetriever jmxMetricsRetriever) {
+                             JmxMetricsRetriever jmxMetricsRetriever, DynamoClusterProperties dynamoClusterProperties) {
     this.webClientMaxBuffSize = Optional.ofNullable(webclientProperties.getMaxInMemoryBufferSize())
         .map(DataSize::parse)
         .orElse(DEFAULT_WEBCLIENT_BUFFER);
