@@ -38,3 +38,7 @@ aws dynamodb create-table --table-name sainsburys-kafbat-rbac --attribute-defini
 ## Design
 This design highlights the high level integration of DynamoDB component from a configuration event to commit to the new DynamoDB tables based on the config type.
 ![img.png](img.png)
+
+## Links
+[Data Masking Solution Design](https://sainsburys-tech.atlassian.net/wiki/spaces/INTEGRATION/pages/1790574757)
+[LocalStack and DynamoDB](https://sainsburys-tech.atlassian.net/wiki/x/FRYgOg)
