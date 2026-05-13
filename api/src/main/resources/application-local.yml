@@ -196,8 +196,6 @@ sainsburys:
     feature:
       enabled: ${SAINSBURYS_DATA_MASKING_FEATURE_ENABLED}
     rule:
-      cluster:
-        unmasked-prefix: 'unmasked-'
       time-to-live: 3600000 #60 minutes in millis
       chars-replacement:
         - X
@@ -212,6 +210,3 @@ sainsburys:
       update-rbac-rate-millis: ${SAINSBURYS_RBAC_SCHEDULER_MILLIS} #60 minutes in millis
     subject:
       type: user
-
-    date:
-      format: 'yyyy-MM-dd HH:mm:ss.SSS'
