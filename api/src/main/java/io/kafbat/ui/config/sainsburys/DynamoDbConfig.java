@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableDynamoDBRepositories(basePackages = "io.kafbat.ui.repository")
-public class DynamoDBConfig {
+public class DynamoDbConfig {
 
   @Value("${aws.region: eu-west-1}")
   private String region;

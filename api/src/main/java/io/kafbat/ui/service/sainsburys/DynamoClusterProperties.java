@@ -13,13 +13,13 @@ import io.kafbat.ui.repository.DynamoRbacEntityRepository;
 import io.kafbat.ui.service.masking.DataMasking;
 import io.kafbat.ui.service.masking.policies.MaskingPolicy;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -30,22 +30,22 @@ public class DynamoClusterProperties {
   private List<DynamoMaskingEntity> maskingEntityList;
 
   @PostConstruct
-  public void loadConfiguration(){
+  public void loadConfiguration() {
     this.maskingEntityList = maskingEntityRepository.findAll();
   }
 
-  public void loadMaskingConfiguration(){
+  public void loadMaskingConfiguration() {
     this.maskingEntityList = maskingEntityRepository.findAll();
   }
 
-  public List<ClustersProperties.Masking> retrieveDynamoMaskingToMaskingList(String cluster){
+  public List<ClustersProperties.Masking> retrieveDynamoMaskingToMaskingList(String cluster) {
     return this.maskingEntityList.stream()
         .filter(mask->mask.getName().contains(cluster))
         .map(this::mapperDynamoMaskingToMasking)
         .toList();
   }
 
-  private ClustersProperties.Masking mapperDynamoMaskingToMasking(DynamoMaskingEntity source){
+  private ClustersProperties.Masking mapperDynamoMaskingToMasking(DynamoMaskingEntity source) {
     ClustersProperties.Masking masking = new ClustersProperties.Masking();
     masking.setMaskingCharsReplacement(source.getMaskingCharsReplacement());
     masking.setType(ClustersProperties.Masking.Type.valueOf(source.getType()));
@@ -58,9 +58,9 @@ public class DynamoClusterProperties {
     return masking;
   }
 
-  public List<DataMasking.Mask> retrieveDynamoMasks(String cluster){
+  public List<DataMasking.Mask> retrieveDynamoMasks(String cluster) {
     List<DataMasking.Mask> maskList = new ArrayList<>();
-    retrieveDynamoMaskingToMaskingList(cluster).forEach(p->{
+    retrieveDynamoMaskingToMaskingList(cluster).forEach(p -> {
       DataMasking.Mask mask = new DataMasking.Mask(
           Optional.ofNullable(p.getTopicKeysPattern()).map(Pattern::compile).orElse(null),
           Optional.ofNullable(p.getTopicValuesPattern()).map(Pattern::compile).orElse(null),
@@ -73,13 +73,13 @@ public class DynamoClusterProperties {
     return maskList;
   }
 
-  public List<Role> retrieveDynamoRBACUserRoles(){
+  public List<Role> retrieveDynamoRbacUserRoles() {
     return this.rbacEntityRepository.findAll().stream()
         .map(this::mapperDynamoRbacToRole)
         .toList();
   }
 
-  private Role mapperDynamoRbacToRole(DynamoRbacEntity source){
+  private Role mapperDynamoRbacToRole(DynamoRbacEntity source) {
     Role role = new Role();
     role.setName(source.getName());
     role.setClusters(source.getClusters());
@@ -89,7 +89,7 @@ public class DynamoClusterProperties {
     return role;
   }
 
-  private Permission mapperDynamoPermissionToPermission(DynamoPermission source){
+  private Permission mapperDynamoPermissionToPermission(DynamoPermission source) {
     Permission permission = new Permission();
     permission.setResource(source.getResource());
     permission.setActions(source.getActions());
@@ -99,7 +99,7 @@ public class DynamoClusterProperties {
     return permission;
   }
 
-  private Subject mapperDynamoSubjectToSubject(DynamoSubject source){
+  private Subject mapperDynamoSubjectToSubject(DynamoSubject source) {
     Subject subject = new Subject();
     subject.setValue(source.getValue());
     subject.setRegex(source.isRegex());
