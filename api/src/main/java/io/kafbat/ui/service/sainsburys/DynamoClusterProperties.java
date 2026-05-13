@@ -40,7 +40,7 @@ public class DynamoClusterProperties {
 
   public List<ClustersProperties.Masking> retrieveDynamoMaskingToMaskingList(String cluster) {
     return this.maskingEntityList.stream()
-        .filter(mask->mask.getName().contains(cluster))
+        .filter(mask -> mask.getName().contains(cluster))
         .map(this::mapperDynamoMaskingToMasking)
         .toList();
   }
