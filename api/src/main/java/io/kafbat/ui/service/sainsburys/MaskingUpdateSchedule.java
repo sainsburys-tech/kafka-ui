@@ -206,7 +206,12 @@ public class MaskingUpdateSchedule {
   }
 
   private static String getLogicalClusterFromProperties(ApplicationConfigPropertiesKafkaClustersInnerDTO c) {
-    return  String.valueOf(c.getProperties().get("clusterId"));
+    String jaasConfigStr = c.getProperties().get("sasl.jaas.config");
+    if (jaasConfigStr != null) {
+      String logicalClusterId = jaasConfigStr.split("extension_logicalCluster")[1].split(" ").replace("\"");
+      return  String.valueOf();
+    }
+    return null;
   }
 
   private void updateTopicLevelMasking(ApplicationConfigPropertiesKafkaClustersInnerDTO cluster, String topic,
