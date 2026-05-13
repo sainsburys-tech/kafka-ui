@@ -25,9 +25,6 @@ import io.kafbat.ui.repository.DynamoMaskingEntityRepository;
 import io.kafbat.ui.util.DynamicConfigOperations;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -135,8 +132,7 @@ public class MaskingUpdateSchedule {
         .toList();
 
     confluentTopicList.forEach(topic -> {
-      if (topic.getQualifiedName() != null &&
-          topic.getQualifiedName().contains(getLogicalClusterFromProperties(cluster))) {
+      if (topic.getQualifiedName() != null) {
         if (cluster.getMasking().isEmpty()) {
 
           SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
@@ -203,15 +199,6 @@ public class MaskingUpdateSchedule {
       }
 
     });
-  }
-
-  private static String getLogicalClusterFromProperties(ApplicationConfigPropertiesKafkaClustersInnerDTO c) {
-    String jaasConfigStr = c.getProperties().get("sasl.jaas.config");
-    if (jaasConfigStr != null) {
-      String logicalClusterId = jaasConfigStr.split("extension_logicalCluster")[1].split(" ").replace("\"");
-      return  String.valueOf();
-    }
-    return null;
   }
 
   private void updateTopicLevelMasking(ApplicationConfigPropertiesKafkaClustersInnerDTO cluster, String topic,
