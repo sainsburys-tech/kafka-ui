@@ -10,7 +10,6 @@ import io.kafbat.ui.model.InternalTopicConsumerGroup;
 import io.kafbat.ui.model.KafkaCluster;
 import io.kafbat.ui.model.ServerStatusDTO;
 import io.kafbat.ui.model.SortOrderDTO;
-import io.kafbat.ui.service.ConsumerGroupService.ConsumerGroupsPage;
 import io.kafbat.ui.model.Statistics;
 import io.kafbat.ui.service.index.ConsumerGroupFilter;
 import io.kafbat.ui.service.metrics.scrape.ScrapedClusterState;
