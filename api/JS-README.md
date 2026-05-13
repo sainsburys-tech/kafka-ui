@@ -3,6 +3,9 @@ Web UI for managing Apache Kafka clusters
 
 [Data Masking Solution Design](https://sainsburys-tech.atlassian.net/wiki/spaces/INTEGRATION/pages/1790574757)
 
+# Interface
+![js-kafbat-masking.gif](js-kafbat-masking.gif)
+
 ## Table of contents
 - [Requirements](#requirements)
 - [Getting started](#getting-started)
