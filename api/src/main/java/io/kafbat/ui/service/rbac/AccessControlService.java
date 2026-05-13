@@ -68,6 +68,7 @@ public class AccessControlService {
   @Getter
   private Set<ProviderAuthorityExtractor> oauthExtractors = Collections.emptySet();
 
+
   @PostConstruct
   public void init() {
     if (CollectionUtils.isEmpty(properties.getRoles()) && properties.getDefaultRole() == null) {
