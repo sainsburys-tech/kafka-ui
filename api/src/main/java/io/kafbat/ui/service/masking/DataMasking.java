@@ -70,9 +70,9 @@ public class DataMasking {
         .value(valMasker.apply(msg.getValue()));
   }
 
-  public UnaryOperator<TopicMessageDTO> getMaskerForTopic(String topic, List<Mask> maskList) {
-    var keyMasker = getMaskingFunction(topic, Serde.Target.KEY, maskList);
-    var valMasker = getMaskingFunction(topic, Serde.Target.VALUE, maskList);
+  public UnaryOperator<TopicMessageDTO> getMaskerForTopic(String topic, List<Mask> maskList, boolean hasUnmaskRole) {
+    var keyMasker = getMaskingFunction(topic, Serde.Target.KEY, maskList, hasUnmaskRole);
+    var valMasker = getMaskingFunction(topic, Serde.Target.VALUE, maskList, hasUnmaskRole);
     return msg -> msg
         .key(keyMasker.apply(msg.getKey()))
         .value(valMasker.apply(msg.getValue()));
@@ -107,9 +107,9 @@ public class DataMasking {
   }
 
   @VisibleForTesting
-  UnaryOperator<String> getMaskingFunction(String topic, Serde.Target target, List<Mask> maskList) {
+  UnaryOperator<String> getMaskingFunction(String topic, Serde.Target target, List<Mask> maskList, boolean hasUnmaskRole) {
     maskList.addAll(masks);
-    var targetMasks = maskList.stream().filter(m -> m.shouldBeApplied(topic, target)).toList();
+    var targetMasks = maskList.stream().filter(m -> m.shouldBeApplied(topic, target) && !hasUnmaskRole).toList();
     if (targetMasks.isEmpty()) {
       return UnaryOperator.identity();
     }

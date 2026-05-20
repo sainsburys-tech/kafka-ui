@@ -953,6 +953,33 @@ paths:
                 items:
                   $ref: '#/components/schemas/TopicMessageEvent'
 
+  /api/clusters/{clusterName}/topics/{topicName}/unmask:
+    post:
+      tags:
+        - Unmasking
+      summary: dataUnmask
+      operationId: dataUnmasking
+      parameters:
+        - name: clusterName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: topicName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnmaskRequest'
+      responses:
+        200:
+          description: OK
+        404:
+          description: Not found
 
   /api/clusters/{clusterName}/topics/{topicName}/activeproducers:
     get:
@@ -3160,6 +3187,14 @@ components:
           nullable: true
       required:
         - partition
+
+    UnmaskRequest:
+      type: object
+      properties:
+        justification:
+          type: string
+      required:
+        - justification
 
     TopicMessageEvent:
       type: object
