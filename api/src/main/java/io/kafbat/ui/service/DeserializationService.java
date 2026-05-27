@@ -35,8 +35,8 @@ public class DeserializationService implements Closeable {
   private final Map<String, ClusterSerdes> clusterSerdes = new ConcurrentHashMap<>();
   private final DynamoClusterProperties dynamoClusterProperties;
 
-  @Value("${sainsburys.masking.feature.enabled: false }")
-  private boolean isMaskingEnabled;
+  @Value("${sainsburys.masking.feature.enabled: 'false' }")
+  private String isMaskingEnabled;
 
   public DeserializationService(Environment env,
                                 ClustersStorage clustersStorage,
@@ -110,7 +110,7 @@ public class DeserializationService implements Closeable {
     var valueSerde = getSerdeForDeserialize(cluster, topic, Serde.Target.VALUE, valueSerdeName);
     var fallbackSerde = getSerdesFor(cluster).getFallbackSerde();
     UnaryOperator<TopicMessageDTO> maskerForTopic;
-    if (isMaskingEnabled) {
+    if (Boolean.valueOf(isMaskingEnabled)) {
       maskerForTopic = cluster.getMasking().getMaskerForTopic(topic,
           dynamoClusterProperties.retrieveDynamoMasks(cluster.getName()));
     } else {
