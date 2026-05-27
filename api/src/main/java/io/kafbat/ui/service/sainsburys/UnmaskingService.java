@@ -195,29 +195,29 @@ public class UnmaskingService {
   private ServiceNowCreate buildServiceNowCreatePayload(String cluster, String topic, String justification,
                                                         String username) {
 
-    String description = serviceNowRequestConfig.getUDescription().replace(KAFKA_CLUSTER_SERVICENOW_DESCRIPTION,
+    String description = serviceNowRequestConfig.getUdDescription().replace(KAFKA_CLUSTER_SERVICENOW_DESCRIPTION,
         cluster + "\n");
     description = description.replace(KAFKA_TOPIC_SERVICENOW_DESCRIPTION, topic + "\n");
     description = description.replace(JUSTIFICATION_SERVICENOW_DESCRIPTION, justification);
 
     return ServiceNowCreate.builder()
-        .uaAssignedTo(serviceNowRequestConfig.getUAssignedTo())
-        .uaAssignmentGroup(serviceNowRequestConfig.getUAssignmentGroup())
-        .ubBusinessService(serviceNowRequestConfig.getUBusinessService())
+        .uaAssignedTo(serviceNowRequestConfig.getUaAssignedTo())
+        .uaAssignmentGroup(serviceNowRequestConfig.getUaAssignmentGroup())
+        .ubBusinessService(serviceNowRequestConfig.getUbBusinessService())
         .ucCallerId(username)
-        .ucCategory(serviceNowRequestConfig.getUCategory())
-        .usSubcategory(serviceNowRequestConfig.getUSubcategory())
-        .ucCmdbCi(serviceNowRequestConfig.getUCmdbCi())
-        .ucComments(serviceNowRequestConfig.getUComments())
+        .ucCategory(serviceNowRequestConfig.getUcCategory())
+        .usSubcategory(serviceNowRequestConfig.getUsSubcategory())
+        .ucCmdbCi(serviceNowRequestConfig.getUcCmdbCi())
+        .ucComments(serviceNowRequestConfig.getUcComments())
         .udDescription(description)
-        .uiImpact(serviceNowRequestConfig.getUImpact())
-        .uuUrgency(serviceNowRequestConfig.getUUrgency())
-        .uiImpactedParties(serviceNowRequestConfig.getUImpactedParties())
-        .ulLocationNotFound(serviceNowRequestConfig.getULocationNotFound())
-        .uuUndefinedLocation(serviceNowRequestConfig.getUUndefinedLocation())
-        .usShortDescription(serviceNowRequestConfig.getUShortDescription())
-        .usState(serviceNowRequestConfig.getUState())
-        .uwWorkNotes(serviceNowRequestConfig.getUWorkNotes())
+        .uiImpact(serviceNowRequestConfig.getUiImpact())
+        .uuUrgency(serviceNowRequestConfig.getUuUrgency())
+        .uiImpactedParties(serviceNowRequestConfig.getUiImpactedParties())
+        .ulLocationNotFound(serviceNowRequestConfig.getUlLocationNotFound())
+        .uuUndefinedLocation(serviceNowRequestConfig.getUuUndefinedLocation())
+        .usShortDescription(serviceNowRequestConfig.getUsShortDescription())
+        .usState(serviceNowRequestConfig.getUsState())
+        .uwWorkNotes(serviceNowRequestConfig.getUwWorkNotes())
         .build();
   }
 
