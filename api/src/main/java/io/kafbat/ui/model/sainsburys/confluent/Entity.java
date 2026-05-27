@@ -29,7 +29,7 @@ public class Entity {
   private @Nullable UUID guid;
 
   /**
-   * Gets or Sets status
+   * Gets or Sets status.
    */
   public enum StatusEnum {
     ACTIVE("ACTIVE"),
