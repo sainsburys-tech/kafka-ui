@@ -107,7 +107,8 @@ public class DataMasking {
   }
 
   @VisibleForTesting
-  UnaryOperator<String> getMaskingFunction(String topic, Serde.Target target, List<Mask> maskList, boolean hasUnmaskRole) {
+  UnaryOperator<String> getMaskingFunction(String topic, Serde.Target target, List<Mask> maskList,
+                                           boolean hasUnmaskRole) {
     maskList.addAll(masks);
     var targetMasks = maskList.stream().filter(m -> m.shouldBeApplied(topic, target) && !hasUnmaskRole).toList();
     if (targetMasks.isEmpty()) {

@@ -11,6 +11,7 @@ import io.kafbat.ui.serdes.ConsumerRecordDeserializer;
 import io.kafbat.ui.serdes.ProducerRecordCreator;
 import io.kafbat.ui.serdes.SerdeInstance;
 import io.kafbat.ui.serdes.SerdesInitializer;
+import io.kafbat.ui.service.sainsburys.DynamoClusterProperties;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.validation.ValidationException;
-import io.kafbat.ui.service.sainsburys.DynamoClusterProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -41,7 +41,8 @@ public class DeserializationService implements Closeable {
 
   public DeserializationService(Environment env,
                                 ClustersStorage clustersStorage,
-                                ClustersProperties clustersProperties, DynamoClusterProperties dynamoClusterProperties) {
+                                ClustersProperties clustersProperties,
+                                DynamoClusterProperties dynamoClusterProperties) {
     this.dynamoClusterProperties = dynamoClusterProperties;
     var serdesInitializer = new SerdesInitializer();
     for (int i = 0; i < clustersProperties.getClusters().size(); i++) {
@@ -130,23 +131,22 @@ public class DeserializationService implements Closeable {
     var valueSerde = getSerdeForDeserialize(cluster, topic, Serde.Target.VALUE, valueSerdeName);
     var fallbackSerde = getSerdesFor(cluster).getFallbackSerde();
     UnaryOperator<TopicMessageDTO> maskerForTopic;
-    if(isMaskingEnabled){
+    if (isMaskingEnabled) {
       boolean hasUnmaskRole = !Objects.isNull(dynamoClusterProperties.retrieveDynamoRbacByKey(principal,
           cluster.getName(), topic));
-      maskerForTopic = cluster.getMasking().getMaskerForTopic(topic, dynamoClusterProperties.retrieveDynamoMasks(cluster.getName()), hasUnmaskRole);
-    }else{
+      maskerForTopic = cluster.getMasking().getMaskerForTopic(topic,
+          dynamoClusterProperties.retrieveDynamoMasks(cluster.getName()), hasUnmaskRole);
+    } else {
       maskerForTopic = cluster.getMasking().getMaskerForTopic(topic);
     }
-    return new ConsumerRecordDeserializer(
-        keySerde.getName(),
+    return new ConsumerRecordDeserializer(keySerde.getName(),
         keySerde.deserializer(topic, Serde.Target.KEY),
         valueSerde.getName(),
         valueSerde.deserializer(topic, Serde.Target.VALUE),
         fallbackSerde.getName(),
         fallbackSerde.deserializer(topic, Serde.Target.KEY),
         fallbackSerde.deserializer(topic, Serde.Target.VALUE),
-        maskerForTopic
-    );
+        maskerForTopic);
   }
 
   public List<SerdeDescriptionDTO> getSerdesForSerialize(KafkaCluster cluster,

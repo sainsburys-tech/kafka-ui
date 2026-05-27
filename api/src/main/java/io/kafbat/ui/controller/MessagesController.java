@@ -51,8 +51,8 @@ public class MessagesController extends AbstractController implements MessagesAp
   private final MessagesService messagesService;
   private final DeserializationService deserializationService;
 
-  @Value("${sainsburys.masking.feature.enabled: false }")
-  private boolean isMaskingEnabled;
+  @Value("${sainsburys.masking.feature.enabled: 'false' }")
+  private String isMaskingEnabled;
 
   @Override
   public Mono<ResponseEntity<Void>> deleteTopicMessages(
@@ -123,16 +123,15 @@ public class MessagesController extends AbstractController implements MessagesAp
     var accessContext = contextBuilder.build();
 
     return exchange.getPrincipal().map(Principal::getName)
-        .flatMap(principal->{
+        .flatMap(principal -> {
           Flux<TopicMessageEventDTO> messagesFlux;
           if (cursor != null) {
             messagesFlux = messagesService.loadMessages(getCluster(clusterName), topicName, cursor);
           } else {
             var pollingMode = mode == null ? PollingModeDTO.LATEST : mode;
-            if(isMaskingEnabled){
-              log.info("=============== Unmask principal: {}",  principal);
-              messagesFlux = messagesService.loadMessages(
-                  getCluster(clusterName),
+            if (Boolean.parseBoolean(isMaskingEnabled)) {
+              log.debug("=============== Unmask principal: {}",  principal);
+              messagesFlux = messagesService.loadMessages(getCluster(clusterName),
                   topicName,
                   principal,
                   ConsumerPosition.create(pollingMode, checkNotNull(topicName), partitions, timestamp, offset),
@@ -140,19 +139,16 @@ public class MessagesController extends AbstractController implements MessagesAp
                   smartFilterId,
                   limit,
                   keySerde,
-                  valueSerde
-              );
-            }else{
-              messagesFlux = messagesService.loadMessages(
-                  getCluster(clusterName),
+                  valueSerde);
+            } else {
+              messagesFlux = messagesService.loadMessages(getCluster(clusterName),
                   topicName,
                   ConsumerPosition.create(pollingMode, checkNotNull(topicName), partitions, timestamp, offset),
                   stringFilter,
                   smartFilterId,
                   limit,
                   keySerde,
-                  valueSerde
-              );
+                  valueSerde);
             }
           }
           return accessControlService.validateAccess(accessContext)
