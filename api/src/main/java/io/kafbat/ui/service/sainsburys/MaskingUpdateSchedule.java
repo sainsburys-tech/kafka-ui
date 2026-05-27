@@ -81,9 +81,9 @@ public class MaskingUpdateSchedule {
 
         AtomicBoolean isMetadataUpdated = new AtomicBoolean(false);
         ApplicationConfigPropertiesDTO config = configMapper.toDto(dynamicConfigOperations.getCurrentProperties());
-        ApplicationConfigPropertiesKafkaDTO kafkaDTO = config.getKafka();
+        ApplicationConfigPropertiesKafkaDTO kafkaDto = config.getKafka();
 
-        kafkaDTO.getClusters()
+        kafkaDto.getClusters()
             .forEach(cluster -> {
 
               String clusterBaseUrl = cluster.getSchemaRegistry();
@@ -99,7 +99,7 @@ public class MaskingUpdateSchedule {
                       maskProcessor(cluster, clusterAuth, tag, isMetadataUpdated);
                     });
               }
-            } );
+            });
 
         if (isMetadataUpdated.get()) {
           log.info("DynamoDB Masking Config Refresh");
@@ -149,8 +149,7 @@ public class MaskingUpdateSchedule {
                 isMetadataUpdated,
                 confluentTopicFieldsResponse);
           }
-        }
-        else {
+        } else {
           SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
               authentication,
               topic.getName());
@@ -330,7 +329,7 @@ public class MaskingUpdateSchedule {
   )
   private SchemaMetadataResponse metadataTopicResponses(String baseUrl,
                                       ApplicationConfigPropertiesKafkaClustersInnerSchemaRegistryAuthDTO authentication,
-                                      String tag){
+                                      String tag) {
     try {
       String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
           authentication.getPassword());
