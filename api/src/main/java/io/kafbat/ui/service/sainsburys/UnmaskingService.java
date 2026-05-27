@@ -127,7 +127,7 @@ public class UnmaskingService {
   private boolean logServiceNowTicket(String cluster, String topic, String justification, String username) {
     try {
       ServiceNowCreate payload = buildServiceNowCreatePayload(cluster, topic, justification, username);
-      ResponseEntity<Object> response = serviceNowClient.createAuditTicket( payload);
+      ResponseEntity<Object> response = serviceNowClient.createAuditTicket(payload);
       return response != null && response.getStatusCode().is2xxSuccessful();
 
     } catch (Exception e) {
@@ -153,22 +153,22 @@ public class UnmaskingService {
       rbacRolesInnerDto.setClusters(List.of(cluster));
 
       ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO rbacRolesInnerSubjectsInnerDto =
-          getApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDto(cluster, principal, config);
+          getRbacRolesInnerSubjectsInnerDto(cluster, principal, config);
 
       rbacRolesInnerDto.setSubjects(List.of(rbacRolesInnerSubjectsInnerDto));
 
-      RbacPermissionDTO clusterPermissionsInnerDTO = new RbacPermissionDTO();
-      clusterPermissionsInnerDTO.setResource(ResourceTypeDTO.CLUSTERCONFIG);
-      clusterPermissionsInnerDTO.setActions(List.of(ActionDTO.VIEW));
+      RbacPermissionDTO clusterPermissionsInnerDto = new RbacPermissionDTO();
+      clusterPermissionsInnerDto.setResource(ResourceTypeDTO.CLUSTERCONFIG);
+      clusterPermissionsInnerDto.setActions(List.of(ActionDTO.VIEW));
 
-      rbacRolesInnerDto.addPermissionsItem(clusterPermissionsInnerDTO);
+      rbacRolesInnerDto.addPermissionsItem(clusterPermissionsInnerDto);
 
-      RbacPermissionDTO topicPermissionsInnerDTO = new RbacPermissionDTO();
-      topicPermissionsInnerDTO.setResource(ResourceTypeDTO.TOPIC);
-      topicPermissionsInnerDTO.setActions(Arrays.asList(ActionDTO.VIEW, ActionDTO.MESSAGES_READ));
-      topicPermissionsInnerDTO.setValue(topic);
+      RbacPermissionDTO topicPermissionsInnerDto = new RbacPermissionDTO();
+      topicPermissionsInnerDto.setResource(ResourceTypeDTO.TOPIC);
+      topicPermissionsInnerDto.setActions(Arrays.asList(ActionDTO.VIEW, ActionDTO.MESSAGES_READ));
+      topicPermissionsInnerDto.setValue(topic);
 
-      rbacRolesInnerDto.addPermissionsItem(topicPermissionsInnerDTO);
+      rbacRolesInnerDto.addPermissionsItem(topicPermissionsInnerDto);
       config.getRbac().addRolesItem(rbacRolesInnerDto);
       isRoleAssigned.set(true);
       createDynamoRbac(mapperFromRbacRoleDto(rbacRolesInnerDto));
@@ -177,9 +177,10 @@ public class UnmaskingService {
     }
   }
 
-  private @NonNull ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO getApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDto(String cluster,
-                                                                            String principal,
-                                                                            ApplicationConfigPropertiesDTO config) {
+  private @NonNull ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO getRbacRolesInnerSubjectsInnerDto(
+                                                               String cluster,
+                                                               String principal,
+                                                               ApplicationConfigPropertiesDTO config) {
     ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO rbacRolesInnerSubjectsInnerDto =
         new ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO();
 
@@ -200,23 +201,23 @@ public class UnmaskingService {
     description = description.replace(JUSTIFICATION_SERVICENOW_DESCRIPTION, justification);
 
     return ServiceNowCreate.builder()
-        .uAssignedTo(serviceNowRequestConfig.getUAssignedTo())
-        .uAssignmentGroup(serviceNowRequestConfig.getUAssignmentGroup())
-        .uBusinessService(serviceNowRequestConfig.getUBusinessService())
-        .uCallerId(username)
-        .uCategory(serviceNowRequestConfig.getUCategory())
-        .uSubcategory(serviceNowRequestConfig.getUSubcategory())
-        .uCmdbCi(serviceNowRequestConfig.getUCmdbCi())
-        .uComments(serviceNowRequestConfig.getUComments())
-        .uDescription(description)
-        .uImpact(serviceNowRequestConfig.getUImpact())
-        .uUrgency(serviceNowRequestConfig.getUUrgency())
-        .uImpactedParties(serviceNowRequestConfig.getUImpactedParties())
-        .uLocationNotFound(serviceNowRequestConfig.getULocationNotFound())
-        .uUndefinedLocation(serviceNowRequestConfig.getUUndefinedLocation())
-        .uShortDescription(serviceNowRequestConfig.getUShortDescription())
-        .uState(serviceNowRequestConfig.getUState())
-        .uWorkNotes(serviceNowRequestConfig.getUWorkNotes())
+        .uaAssignedTo(serviceNowRequestConfig.getUAssignedTo())
+        .uaAssignmentGroup(serviceNowRequestConfig.getUAssignmentGroup())
+        .ubBusinessService(serviceNowRequestConfig.getUBusinessService())
+        .ucCallerId(username)
+        .ucCategory(serviceNowRequestConfig.getUCategory())
+        .usSubcategory(serviceNowRequestConfig.getUSubcategory())
+        .ucCmdbCi(serviceNowRequestConfig.getUCmdbCi())
+        .ucComments(serviceNowRequestConfig.getUComments())
+        .udDescription(description)
+        .uiImpact(serviceNowRequestConfig.getUImpact())
+        .uuUrgency(serviceNowRequestConfig.getUUrgency())
+        .uiImpactedParties(serviceNowRequestConfig.getUImpactedParties())
+        .ulLocationNotFound(serviceNowRequestConfig.getULocationNotFound())
+        .uuUndefinedLocation(serviceNowRequestConfig.getUUndefinedLocation())
+        .usShortDescription(serviceNowRequestConfig.getUShortDescription())
+        .usState(serviceNowRequestConfig.getUState())
+        .uwWorkNotes(serviceNowRequestConfig.getUWorkNotes())
         .build();
   }
 
@@ -234,8 +235,7 @@ public class UnmaskingService {
         });
   }
 
-  @Retryable(retryFor = { ProvisionedThroughputExceededException.class,
-          SdkClientException.class } ,
+  @Retryable(retryFor = { ProvisionedThroughputExceededException.class, SdkClientException.class },
       backoff = @Backoff(delay = 500, multiplier = 2))
   private void createDynamoRbac(DynamoRbacEntity rbac) {
     try {

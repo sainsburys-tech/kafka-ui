@@ -75,12 +75,6 @@ public class DynamoClusterProperties {
     return maskList;
   }
 
-  public List<Role> retrieveDynamoRBACUserRoles() {
-    return this.rbacEntityRepository.findAll().stream()
-        .map(this::mapperDynamoRbacToRole)
-        .toList();
-  }
-
   private Role mapperDynamoRbacToRole(DynamoRbacEntity source) {
     if (source != null) {
       Role role = new Role();
