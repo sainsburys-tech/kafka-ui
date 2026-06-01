@@ -89,6 +89,7 @@ dependencies {
     // Custom Sainsburys DynamoDb
     implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.12.200'
     implementation 'io.github.boostchicken:spring-data-dynamodb:5.2.5'
+    implementation 'com.amazonaws:aws-java-sdk-sts:1.12.200'
 
     // Custom Sainsburys Retryable
     implementation 'org.springframework.retry:spring-retry'
