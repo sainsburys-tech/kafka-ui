@@ -1,13 +1,11 @@
 package io.kafbat.ui.model.sainsburys.servicenow;
 
 import java.io.Serializable;
-import lombok.Data;
+import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.Name;
-import org.springframework.context.annotation.Configuration;
 
-@Data
-@Configuration
+@Getter
 @ConfigurationProperties(prefix = "sainsburys.external.services.service-now.requests.content")
 public class ServiceNowRequestConfig implements Serializable {
 
