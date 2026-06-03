@@ -106,7 +106,12 @@ Given('TopicName menu button clicked', async function(this: PlaywrightWorld) {
 });
 
 Then('TopicNameMenu clear messages active is: {string}', async function(this: PlaywrightWorld, state: string) {
-    await expectVisuallyActive(this.locators.topicTopicName.menuItemClearMessages, state);
+    const element = this.locators.topicTopicName.menuItemClearMessages;
+
+    if (state === "true") {
+        await element.waitFor({ state: 'visible' });
+    }
+    await expectVisuallyActive(element, state);
 });
 
 When('TopicNameMenu edit settings clicked', async function(this: PlaywrightWorld) {
