@@ -63,6 +63,9 @@ jobs:
           -Pinclude-frontend=true \
           -Pversion=latest
 
+      - name: Pre-pull Docker Images
+        run: docker compose -f ./documentation/compose/e2e-tests.yaml pull
+
       - name: Run docker-compose
         run: docker compose -f ./documentation/compose/e2e-tests.yaml up -d
 
