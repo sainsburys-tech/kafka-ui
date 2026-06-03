@@ -64,7 +64,7 @@ jobs:
           -Pversion=latest
 
       - name: Run docker-compose
-        run: docker compose -f ./documentation/compose/e2e-tests.yaml up -d
+        run: docker compose -f ./documentation/compose/e2e-tests.yaml up -d --wait --wait-timeout 180
 
       - name: Run tests with ENV=prod
         working-directory: ./e2e-playwright
@@ -77,5 +77,4 @@ jobs:
           name: playwright-results
           path: ./e2e-playwright/test-results/
           retention-days: 7
-
 
