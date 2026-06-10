@@ -28,5 +28,6 @@ model ClientQuotas {
   user?: string;
   clientId?: string;
   ip?: string;
+  @encoding("double")
   quotas?: Record<decimal>;
 }
