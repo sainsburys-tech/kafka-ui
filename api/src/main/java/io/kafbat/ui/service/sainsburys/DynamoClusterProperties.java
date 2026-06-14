@@ -12,7 +12,6 @@ import io.kafbat.ui.repository.DynamoMaskingEntityRepository;
 import io.kafbat.ui.repository.DynamoRbacEntityRepository;
 import io.kafbat.ui.service.masking.DataMasking;
 import io.kafbat.ui.service.masking.policies.MaskingPolicy;
-import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -30,11 +29,6 @@ public class DynamoClusterProperties {
   private final DynamoMaskingEntityRepository maskingEntityRepository;
   private final DynamoRbacEntityRepository rbacEntityRepository;
   private List<DynamoMaskingEntity> maskingEntityList;
-
-  @PostConstruct
-  public void loadConfiguration() {
-//    this.maskingEntityList = maskingEntityRepository.findAll();
-  }
 
   public void loadMaskingConfiguration() {
     this.maskingEntityList = maskingEntityRepository.findAll();
