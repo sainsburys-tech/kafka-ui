@@ -28,7 +28,7 @@ public class DynamoClusterProperties {
 
   private final DynamoMaskingEntityRepository maskingEntityRepository;
   private final DynamoRbacEntityRepository rbacEntityRepository;
-  private List<DynamoMaskingEntity> maskingEntityList;
+  private List<DynamoMaskingEntity> maskingEntityList = new ArrayList<>();
 
   public void loadMaskingConfiguration() {
     this.maskingEntityList = maskingEntityRepository.findAll();
