@@ -33,7 +33,7 @@ public class DynamoClusterProperties {
 
   @PostConstruct
   public void loadConfiguration() {
-    this.maskingEntityList = maskingEntityRepository.findAll();
+//    this.maskingEntityList = maskingEntityRepository.findAll();
   }
 
   public void loadMaskingConfiguration() {
