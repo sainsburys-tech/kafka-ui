@@ -8,7 +8,6 @@ import io.kafbat.ui.model.sainsburys.dynamo.DynamoMaskingEntity;
 import io.kafbat.ui.model.sainsburys.dynamo.DynamoPermission;
 import io.kafbat.ui.model.sainsburys.dynamo.DynamoRbacEntity;
 import io.kafbat.ui.model.sainsburys.dynamo.DynamoSubject;
-import io.kafbat.ui.repository.DynamoMaskingEntityRepository;
 import io.kafbat.ui.repository.DynamoRbacEntityRepository;
 import io.kafbat.ui.service.masking.DataMasking;
 import io.kafbat.ui.service.masking.policies.MaskingPolicy;
@@ -27,7 +26,6 @@ import org.springframework.stereotype.Service;
 public class DynamoClusterProperties {
   public static final String RBAC_UNMASK_USER_ROLE_S_S_S_UNMASK = "%s_%s_%s_unmask";
 
-  private final DynamoMaskingEntityRepository maskingEntityRepository;
   private final DynamoRbacEntityRepository rbacEntityRepository;
   private List<DynamoMaskingEntity> maskingEntityList;
 
@@ -37,7 +35,7 @@ public class DynamoClusterProperties {
   }
 
   public void loadMaskingConfiguration() {
-    this.maskingEntityList = maskingEntityRepository.findAll();
+    this.maskingEntityList = new ArrayList<>();
   }
 
   public List<ClustersProperties.Masking> retrieveDynamoMaskingToMaskingList(String cluster) {
