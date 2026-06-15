@@ -26,6 +26,7 @@ import io.kafbat.ui.util.KafkaServicesValidation;
 import io.kafbat.ui.util.ReactiveFailover;
 import io.kafbat.ui.util.WebClientConfigurator;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,8 +78,10 @@ public class KafkaClusterFactory {
     builder.producerProperties(convertProperties(clusterProperties.getProducerProperties()));
     builder.readOnly(clusterProperties.isReadOnly());
     List<ClustersProperties.Masking> maskingList = clusterProperties.getMasking();
-    maskingList.addAll(dynamoClusterProperties.retrieveDynamoMaskingToMaskingList(clusterProperties.getName()));
-
+    if (maskingList == null) {
+      maskingList = new ArrayList<>();
+      maskingList.addAll(dynamoClusterProperties.retrieveDynamoMaskingToMaskingList(clusterProperties.getName()));
+    }
     builder.masking(DataMasking.create(maskingList));
     builder.exposeMetricsViaPrometheusEndpoint(exposeMetricsViaPrometheusEndpoint(clusterProperties));
     builder.masking(DataMasking.create(clusterProperties.getMasking()));
