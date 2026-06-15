@@ -4,17 +4,19 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputExceededException;
 import feign.FeignException;
 import io.kafbat.ui.client.sainsburys.ServiceNowClient;
+import io.kafbat.ui.config.ClustersProperties;
 import io.kafbat.ui.exception.TopicNotFoundException;
 import io.kafbat.ui.exception.ValidationException;
 import io.kafbat.ui.mapper.DynamicConfigMapper;
 import io.kafbat.ui.model.ActionDTO;
-import io.kafbat.ui.model.ApplicationConfigPropertiesDTO;
-import io.kafbat.ui.model.ApplicationConfigPropertiesRbacRolesInnerDTO;
 import io.kafbat.ui.model.ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO;
 import io.kafbat.ui.model.KafkaCluster;
 import io.kafbat.ui.model.RbacPermissionDTO;
 import io.kafbat.ui.model.ResourceTypeDTO;
 import io.kafbat.ui.model.UnmaskRequestDTO;
+import io.kafbat.ui.model.rbac.Permission;
+import io.kafbat.ui.model.rbac.Role;
+import io.kafbat.ui.model.rbac.Subject;
 import io.kafbat.ui.model.rbac.provider.Provider;
 import io.kafbat.ui.model.sainsburys.dynamo.DynamoPermission;
 import io.kafbat.ui.model.sainsburys.dynamo.DynamoRbacEntity;
@@ -23,8 +25,7 @@ import io.kafbat.ui.model.sainsburys.servicenow.ServiceNowCreate;
 import io.kafbat.ui.model.sainsburys.servicenow.ServiceNowRequestConfig;
 import io.kafbat.ui.repository.DynamoRbacEntityRepository;
 import io.kafbat.ui.service.AdminClientService;
-import io.kafbat.ui.util.DynamicConfigOperations;
-import jakarta.validation.Valid;
+import io.kafbat.ui.service.rbac.AccessControlService;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -56,8 +58,7 @@ public class UnmaskingService {
   public static final String RBAC_UNMASK_USER_ROLE_S_S_S_UNMASK = "%s_%s_%s_unmask";
   private final AdminClientService adminClientService;
   private final ServiceNowClient serviceNowClient;
-  private final DynamicConfigOperations dynamicConfigOperations;
-  private final DynamicConfigMapper configMapper;
+  private final AccessControlService accessControlService;
   private final ServiceNowRequestConfig serviceNowRequestConfig;
   private final DynamoRbacEntityRepository dynamoRbacEntityRepository;
 
@@ -71,13 +72,12 @@ public class UnmaskingService {
   private String subjectType;
 
   public UnmaskingService(AdminClientService adminClientService, ServiceNowClient serviceNowClient,
-                          DynamicConfigOperations dynamicConfigOperations, DynamicConfigMapper configMapper,
+                          AccessControlService accessControlService,
                           ServiceNowRequestConfig serviceNowRequestConfig,
                           DynamoRbacEntityRepository dynamoRbacEntityRepository) {
     this.adminClientService = adminClientService;
     this.serviceNowClient = serviceNowClient;
-    this.dynamicConfigOperations = dynamicConfigOperations;
-    this.configMapper = configMapper;
+    this.accessControlService = accessControlService;
     this.serviceNowRequestConfig = serviceNowRequestConfig;
     this.dynamoRbacEntityRepository = dynamoRbacEntityRepository;
   }
@@ -109,11 +109,9 @@ public class UnmaskingService {
           msg.getJustification(),
           principal);
       if (isAuditCreated) {
-        ApplicationConfigPropertiesDTO config = configMapper.toDto(dynamicConfigOperations.getCurrentProperties());
         AtomicBoolean isRoleAssigned = new AtomicBoolean(false);
-        updateRbacConfig(cluster.getName(), topicDescription.name(), principal, config, isRoleAssigned);
-        log.info("Persist cluster config change");
-        config.getRbac().getRoles().forEach(r -> log.info("RBAC Role: {}", r.getName()));
+        updateRbacConfig(topicDescription.name(), principal, cluster.getOriginalProperties(), isRoleAssigned);
+        log.info("Completed Persist cluster config change");
       }
       return Mono.empty();
     } catch (Throwable e) {
@@ -135,61 +133,54 @@ public class UnmaskingService {
     }
   }
 
-  private void updateRbacConfig(String cluster, String topic, String principal, ApplicationConfigPropertiesDTO config,
+  private void updateRbacConfig(String topic, String principal, ClustersProperties.@MonotonicNonNull Cluster cluster,
                                 AtomicBoolean isRoleAssigned) {
-    String unmaskPrincipalRole = String.format(RBAC_UNMASK_USER_ROLE_S_S_S_UNMASK, cluster, topic, principal);
-    List<@Valid ApplicationConfigPropertiesRbacRolesInnerDTO> configPropRbacRolesInnerDtoList =
-        config.getRbac().getRoles();
+    String unmaskPrincipalRole = String.format(RBAC_UNMASK_USER_ROLE_S_S_S_UNMASK, cluster.getName(), topic, principal);
 
-    boolean isUnmaskRoleNotExist = configPropRbacRolesInnerDtoList.stream()
+    boolean isUnmaskRoleNotExist = accessControlService.getRoles().stream()
         .filter(r -> r.getName().contains(unmaskPrincipalRole))
         .toList()
         .isEmpty();
 
     if (isUnmaskRoleNotExist) {
-      ApplicationConfigPropertiesRbacRolesInnerDTO rbacRolesInnerDto =
-          new ApplicationConfigPropertiesRbacRolesInnerDTO();
-      rbacRolesInnerDto.setName(unmaskPrincipalRole);
-      rbacRolesInnerDto.setClusters(List.of(cluster));
+      Role rbacRole = new Role();
+      rbacRole.setName(unmaskPrincipalRole);
+      rbacRole.setClusters(List.of(cluster.getName()));
 
-      ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO rbacRolesInnerSubjectsInnerDto =
-          getRbacRolesInnerSubjectsInnerDto(cluster, principal, config);
+      Subject rbacSubject = getRbacRolesInnerSubjectsInnerDto(cluster, principal);
+      rbacRole.setSubjects(List.of(rbacSubject));
 
-      rbacRolesInnerDto.setSubjects(List.of(rbacRolesInnerSubjectsInnerDto));
+      Permission rbacClusterPermission = new Permission();
+      rbacClusterPermission.setResource(ResourceTypeDTO.CLUSTERCONFIG.getValue());
+      rbacClusterPermission.setActions(List.of(ActionDTO.VIEW.getValue()));
 
-      RbacPermissionDTO clusterPermissionsInnerDto = new RbacPermissionDTO();
-      clusterPermissionsInnerDto.setResource(ResourceTypeDTO.CLUSTERCONFIG);
-      clusterPermissionsInnerDto.setActions(List.of(ActionDTO.VIEW));
+      rbacRole.getPermissions().add(rbacClusterPermission);
 
-      rbacRolesInnerDto.addPermissionsItem(clusterPermissionsInnerDto);
+      Permission rbacTopicPermission = new Permission();
+      rbacTopicPermission.setResource(ResourceTypeDTO.TOPIC.getValue());
+      rbacTopicPermission.setActions(Arrays.asList(ActionDTO.VIEW.getValue(), ActionDTO.MESSAGES_READ.getValue()));
+      rbacTopicPermission.setValue(topic);
 
-      RbacPermissionDTO topicPermissionsInnerDto = new RbacPermissionDTO();
-      topicPermissionsInnerDto.setResource(ResourceTypeDTO.TOPIC);
-      topicPermissionsInnerDto.setActions(Arrays.asList(ActionDTO.VIEW, ActionDTO.MESSAGES_READ));
-      topicPermissionsInnerDto.setValue(topic);
-
-      rbacRolesInnerDto.addPermissionsItem(topicPermissionsInnerDto);
-      config.getRbac().addRolesItem(rbacRolesInnerDto);
+      rbacRole.getPermissions().add(rbacTopicPermission);
+      accessControlService.getRoles().add(rbacRole);
       isRoleAssigned.set(true);
-      createDynamoRbac(mapperFromRbacRoleDto(rbacRolesInnerDto));
+      createDynamoRbac(mapperFromRbacRoleDto(rbacRole));
     } else {
       throw new ValidationException("Data unmask role already assigned");
     }
   }
 
-  private @NonNull ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO getRbacRolesInnerSubjectsInnerDto(
-                                                               String cluster,
-                                                               String principal,
-                                                               ApplicationConfigPropertiesDTO config) {
-    ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO rbacRolesInnerSubjectsInnerDto =
-        new ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO();
+  private @NonNull Subject getRbacRolesInnerSubjectsInnerDto(
+      ClustersProperties.@MonotonicNonNull Cluster cluster,
+      String principal) {
+    Subject rbacSubject = new Subject();
 
-    assingPrincipalAuthProvider(cluster, principal, config, rbacRolesInnerSubjectsInnerDto);
+    assignPrincipalAuthProvider(cluster, principal, rbacSubject);
 
-    rbacRolesInnerSubjectsInnerDto.setValue(principal);
-    rbacRolesInnerSubjectsInnerDto.setType(subjectType);
+    rbacSubject.setValue(principal);
+    rbacSubject.setType(subjectType);
 
-    return rbacRolesInnerSubjectsInnerDto;
+    return rbacSubject;
   }
 
   private ServiceNowCreate buildServiceNowCreatePayload(String cluster, String topic, String justification,
@@ -221,11 +212,10 @@ public class UnmaskingService {
         .build();
   }
 
-  private static void assingPrincipalAuthProvider(String cluster, String principal,
-                                                  ApplicationConfigPropertiesDTO config,
-                    ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO rbacRolesInnerSubjectsInnerDto) {
-    config.getRbac().getRoles().stream()
-        .filter(r -> r.getClusters().contains(cluster))
+  private void assignPrincipalAuthProvider(ClustersProperties.@MonotonicNonNull Cluster cluster, String principal,
+                                           Subject rbacRolesInnerSubjectsInnerDto) {
+    accessControlService.getRoles().stream()
+        .filter(r -> r.getClusters().contains(cluster.getName()))
         .forEach(role -> {
           role.getSubjects().stream()
               .filter(s -> s.getValue().equalsIgnoreCase(principal))
@@ -245,7 +235,7 @@ public class UnmaskingService {
     }
   }
 
-  private DynamoRbacEntity mapperFromRbacRoleDto(ApplicationConfigPropertiesRbacRolesInnerDTO source) {
+  private DynamoRbacEntity mapperFromRbacRoleDto(@MonotonicNonNull Role source) {
     var subjects = source.getSubjects().stream().map(this::mapperFromSubjectsDto).toList();
     return DynamoRbacEntity.builder()
         .name(source.getName())
@@ -257,11 +247,11 @@ public class UnmaskingService {
         .build();
   }
 
-  private DynamoSubject mapperFromSubjectsDto(ApplicationConfigPropertiesRbacRolesInnerSubjectsInnerDTO source) {
+  private DynamoSubject mapperFromSubjectsDto(Subject source) {
     DynamoSubject target = new DynamoSubject();
     target.setType(source.getType());
     target.setValue(source.getValue());
-    target.setProvider(Provider.valueOf(source.getProvider()));
+    target.setProvider(source.getProvider());
     target.setRegex(false);
 
     Calendar calendar = Calendar.getInstance();
@@ -280,11 +270,11 @@ public class UnmaskingService {
     return target;
   }
 
-  private DynamoPermission mapperFromPermissionsDto(RbacPermissionDTO source) {
+  private DynamoPermission mapperFromPermissionsDto(Permission source) {
     DynamoPermission target = new DynamoPermission();
     target.setValue(source.getValue());
-    target.setActions(source.getActions().stream().map(ActionDTO::getValue).toList());
-    target.setResource(source.getResource().getValue());
+    target.setActions(source.getActions());
+    target.setResource(source.getResource().name());
     return target;
   }
 
