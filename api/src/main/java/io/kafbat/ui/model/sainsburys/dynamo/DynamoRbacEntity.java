@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@DynamoDBTable(tableName = "sainsburys-kafbat-rbac")
+@DynamoDBTable(tableName = "css-kafka-sainsburys-kafbat-rbac")
 public class DynamoRbacEntity {
   @DynamoDBHashKey(attributeName = "partitionKey")
   private String name;

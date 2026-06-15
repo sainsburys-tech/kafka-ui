@@ -79,8 +79,8 @@ public class KafkaClusterFactory {
     builder.readOnly(clusterProperties.isReadOnly());
     List<ClustersProperties.Masking> maskingList = clusterProperties.getMasking();
     if (maskingList == null) {
-      maskingList = new ArrayList<>();
-      maskingList.addAll(dynamoClusterProperties.retrieveDynamoMaskingToMaskingList(clusterProperties.getName()));
+      maskingList =
+          new ArrayList<>(dynamoClusterProperties.retrieveDynamoMaskingToMaskingList(clusterProperties.getName()));
     }
     builder.masking(DataMasking.create(maskingList));
     builder.exposeMetricsViaPrometheusEndpoint(exposeMetricsViaPrometheusEndpoint(clusterProperties));
