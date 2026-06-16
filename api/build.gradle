@@ -119,6 +119,12 @@ dependencies {
     testImplementation libs.okhttp3.mockwebserver
 }
 
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:2025.0.0"
+    }
+}
+
 generateGrammarSource {
     maxHeapSize = "64m"
     arguments += ["-package", "ksql"]
