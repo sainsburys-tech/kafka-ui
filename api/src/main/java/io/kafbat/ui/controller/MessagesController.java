@@ -30,7 +30,6 @@ import io.kafbat.ui.service.mcp.McpTool;
 import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +80,7 @@ public class MessagesController extends AbstractController implements MessagesAp
         .map(ResponseEntity::ok);
   }
 
-  @Deprecated
+  @Deprecated(forRemoval = true, since = "1.1.0")
   @Override
   public Mono<ResponseEntity<Flux<TopicMessageEventDTO>>> getTopicMessages(String clusterName,
                                                                            String topicName,
