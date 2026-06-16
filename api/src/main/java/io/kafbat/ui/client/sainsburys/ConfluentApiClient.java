@@ -20,17 +20,17 @@ public interface ConfluentApiClient {
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.tagdefs}")
   ResponseEntity<List<TagDefinitionClassificationResponse>> retrieveTagDefinitions(URI baseUrl,
-                                                                                   @RequestHeader("Authorization") String authorization);
+                                              @RequestHeader("Authorization") String authorization);
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic}")
   ResponseEntity<SchemaMetadataResponse> retrieveTopicMetadata(URI baseUrl,
-                                                               @RequestHeader("Authorization") String authorization,
-                                                               @RequestParam("tag") String tag);
+                                            @RequestHeader("Authorization") String authorization,
+                                            @RequestParam("tag") String tag);
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic.fields}")
   ResponseEntity<SchemaMetadataResponse> retrieveTopicFieldsMetadata(URI baseUrl,
-                                                                     @RequestHeader("Authorization") String authorization,
-                                                                     @RequestParam("tag") String tag);
+                                        @RequestHeader("Authorization") String authorization,
+                                        @RequestParam("tag") String tag);
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.schema}")
   ResponseEntity<SchemaMetadataResponse> retrieveSchemaMetadata(URI baseUrl,

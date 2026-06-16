@@ -298,7 +298,7 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private List<TagDefinitionClassificationResponse> tagDefinitionResponse(String baseUrl,
-                                                                          ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication) {
+                ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication) {
     try {
       if (baseUrl != null && authentication != null) {
         String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
@@ -322,8 +322,8 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private SchemaMetadataResponse metadataTopicResponses(String baseUrl,
-                                                        ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication,
-                                                        String tag) {
+                            ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication,
+                            String tag) {
     try {
       String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
           authentication.getPassword());
@@ -344,8 +344,8 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private SubjectMetadataResponse retrieveSubjectMetadataResponses(String baseUrl,
-                                                                   ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication,
-                                                                   String topic) {
+                                ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication,
+                                String topic) {
     try {
       String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
           authentication.getPassword());

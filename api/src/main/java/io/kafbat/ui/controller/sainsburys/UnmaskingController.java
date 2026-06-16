@@ -24,9 +24,10 @@ public class UnmaskingController extends AbstractController implements Unmasking
 
   private final UnmaskingService unmaskingService;
 
+
   @Override
-  public Mono<ResponseEntity<Void>> sendUnmaskRequest(String clusterName, String topicName,
-                                                      Mono<UnmaskRequestDTO> unmaskRequest, ServerWebExchange exchange) {
+  public Mono<ResponseEntity<Void>> dataUnmasking(String clusterName, String topicName,
+                                                  Mono<UnmaskRequestDTO> unmaskRequestDto, ServerWebExchange exchange) {
     log.info("Unmasking cluster {}, topic {} messages", clusterName, topicName);
     return exchange.getPrincipal()
         .map(Principal::getName)
@@ -37,7 +38,7 @@ public class UnmaskingController extends AbstractController implements Unmasking
               .operationName("getTopicMessages")
               .build();
           return validateAccess(context).then(
-              unmaskRequest.flatMap(msg ->
+              unmaskRequestDto.flatMap(msg ->
                   unmaskingService.decrypt(getCluster(clusterName), topicName, msg, principal)
               ).map(m -> new ResponseEntity<Void>(HttpStatus.OK))
           ).doOnEach(sig -> audit(context, sig));
