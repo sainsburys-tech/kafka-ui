@@ -6,13 +6,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import io.kafbat.ui.client.sainsburys.ConfluentApiClient;
+import io.kafbat.ui.config.ClustersProperties;
 import io.kafbat.ui.config.sainsburys.ConfluentAuthConfig;
-import io.kafbat.ui.mapper.DynamicConfigMapper;
-import io.kafbat.ui.model.ApplicationConfigPropertiesDTO;
-import io.kafbat.ui.model.ApplicationConfigPropertiesKafkaClustersInnerDTO;
 import io.kafbat.ui.model.ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO;
-import io.kafbat.ui.model.ApplicationConfigPropertiesKafkaClustersInnerSchemaRegistryAuthDTO;
-import io.kafbat.ui.model.ApplicationConfigPropertiesKafkaDTO;
+import io.kafbat.ui.model.KafkaCluster;
 import io.kafbat.ui.model.sainsburys.confluent.ConfluentAvroField;
 import io.kafbat.ui.model.sainsburys.confluent.ConfluentAvroSchema;
 import io.kafbat.ui.model.sainsburys.confluent.Entity;
@@ -22,13 +19,14 @@ import io.kafbat.ui.model.sainsburys.confluent.SubjectMetadataResponse;
 import io.kafbat.ui.model.sainsburys.confluent.TagDefinitionClassificationResponse;
 import io.kafbat.ui.model.sainsburys.dynamo.DynamoMaskingEntity;
 import io.kafbat.ui.repository.DynamoMaskingEntityRepository;
-import io.kafbat.ui.util.DynamicConfigOperations;
+import io.kafbat.ui.service.ClustersStorage;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
@@ -43,8 +41,7 @@ import org.springframework.stereotype.Service;
 public class MaskingUpdateSchedule {
 
   private final ConfluentApiClient confluentApiClient;
-  private final DynamicConfigOperations dynamicConfigOperations;
-  private final DynamicConfigMapper configMapper;
+  private final ClustersStorage clustersStorage;
   private final DynamoClusterProperties dynamoClusterProperties;
   private final DynamoMaskingEntityRepository dynamoMaskingEntityRepository;
 
@@ -61,13 +58,11 @@ public class MaskingUpdateSchedule {
   private String schemaDataClassificationTag;
 
   public MaskingUpdateSchedule(ConfluentApiClient confluentApiClient,
-                               DynamicConfigOperations dynamicConfigOperations,
-                               DynamicConfigMapper configMapper,
+                               ClustersStorage clustersStorage,
                                DynamoClusterProperties dynamoClusterProperties,
                                DynamoMaskingEntityRepository dynamoMaskingEntityRepository) {
     this.confluentApiClient = confluentApiClient;
-    this.dynamicConfigOperations = dynamicConfigOperations;
-    this.configMapper = configMapper;
+    this.clustersStorage = clustersStorage;
     this.dynamoClusterProperties = dynamoClusterProperties;
     this.dynamoMaskingEntityRepository = dynamoMaskingEntityRepository;
   }
@@ -80,14 +75,11 @@ public class MaskingUpdateSchedule {
         log.info("Update masking tags dynamic config start");
 
         AtomicBoolean isMetadataUpdated = new AtomicBoolean(false);
-        ApplicationConfigPropertiesDTO config = configMapper.toDto(dynamicConfigOperations.getCurrentProperties());
-        ApplicationConfigPropertiesKafkaDTO kafkaDto = config.getKafka();
 
-        kafkaDto.getClusters()
+        clustersStorage.getKafkaClusters()
             .forEach(cluster -> {
-
-              String clusterBaseUrl = cluster.getSchemaRegistry();
-              var clusterAuth = cluster.getSchemaRegistryAuth();
+              String clusterBaseUrl = cluster.getOriginalProperties().getSchemaRegistry();
+              var clusterAuth = cluster.getOriginalProperties().getSchemaRegistryAuth();
 
               List<TagDefinitionClassificationResponse> tagDefinitionList = tagDefinitionResponse(clusterBaseUrl,
                   clusterAuth);
@@ -113,11 +105,11 @@ public class MaskingUpdateSchedule {
     }
   }
 
-  private void maskProcessor(ApplicationConfigPropertiesKafkaClustersInnerDTO cluster,
-                             ApplicationConfigPropertiesKafkaClustersInnerSchemaRegistryAuthDTO authentication,
+  private void maskProcessor(KafkaCluster cluster,
+                             ClustersProperties.SchemaRegistryAuth authentication,
                              String tag,
                              AtomicBoolean isMetadataUpdated) {
-    String baseUrl = cluster.getSchemaRegistry();
+    String baseUrl = cluster.getOriginalProperties().getSchemaRegistry();
     SchemaMetadataResponse confluentResponse = metadataTopicResponses(baseUrl, authentication, tag);
 
     if (confluentResponse == null) {
@@ -132,7 +124,7 @@ public class MaskingUpdateSchedule {
 
     confluentTopicList.forEach(topic -> {
       if (topic.getQualifiedName() != null) {
-        if (cluster.getMasking().isEmpty()) {
+        if (cluster.getOriginalProperties().getMasking().isEmpty()) {
 
           SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
               authentication,
@@ -140,12 +132,12 @@ public class MaskingUpdateSchedule {
 
           if (confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
             updateFieldLevelMasking(cluster, topic.getName(),
-                new ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO(),
+                new ClustersProperties.Masking(),
                 isMetadataUpdated,
                 confluentTopicFieldsResponse);
           } else {
             updateTopicLevelMasking(cluster, topic.getName(),
-                new ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO(),
+                new ClustersProperties.Masking(),
                 isMetadataUpdated,
                 confluentTopicFieldsResponse);
           }
@@ -155,8 +147,8 @@ public class MaskingUpdateSchedule {
               topic.getName());
 
           if (confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
-            List<@Valid ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO> fieldMaskList =
-                cluster.getMasking().stream()
+            List<ClustersProperties.@Valid Masking> fieldMaskList =
+                cluster.getOriginalProperties().getMasking().stream()
                 .filter(mask -> mask.getType().equals(
                     ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO.TypeEnum.MASK))
                 .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic.getName()))
@@ -169,12 +161,12 @@ public class MaskingUpdateSchedule {
               });
             } else {
               updateFieldLevelMasking(cluster, topic.getName(),
-                  new ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO(),
+                  new ClustersProperties.Masking(),
                   isMetadataUpdated, confluentTopicFieldsResponse);
             }
           } else {
-            List<@Valid ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO> topicMaskList =
-                cluster.getMasking().stream()
+            List<ClustersProperties.@Valid Masking> topicMaskList =
+                cluster.getOriginalProperties().getMasking().stream()
                     .filter(mask -> mask.getType().equals(
                         ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO.TypeEnum.REPLACE))
                     .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic.getName()))
@@ -188,7 +180,7 @@ public class MaskingUpdateSchedule {
               });
             } else {
               updateTopicLevelMasking(cluster, topic.getName(),
-                  new ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO(),
+                  new ClustersProperties.Masking(),
                   isMetadataUpdated,
                   confluentTopicFieldsResponse);
             }
@@ -199,8 +191,8 @@ public class MaskingUpdateSchedule {
     });
   }
 
-  private void updateTopicLevelMasking(ApplicationConfigPropertiesKafkaClustersInnerDTO cluster, String topic,
-                                       ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO mask,
+  private void updateTopicLevelMasking(KafkaCluster cluster, String topic,
+                                       ClustersProperties.@Valid Masking mask,
                                        AtomicBoolean isMetadataUpdated,
                                        SubjectMetadataResponse confluentTopicFieldsResponse) {
     log.info("Topic Level Masking for topic name: {}", topic);
@@ -209,7 +201,7 @@ public class MaskingUpdateSchedule {
     if (confluentAvroSchema != null && !confluentAvroSchema.getFields().isEmpty()) {
 
       log.info("Processing fields from confluent subject: {}", confluentTopicFieldsResponse.getSubject());
-      mask.type(ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO.TypeEnum.REPLACE);
+      mask.setType(ClustersProperties.Masking.Type.REPLACE);
       mask.setReplacement(defaultMaskingTopicReplacement);
       mask.setTopicValuesPattern(topic);
 
@@ -223,7 +215,7 @@ public class MaskingUpdateSchedule {
           confluentTopicFieldsList);
       if (!fieldsToMask.isEmpty()) {
         fieldsToMask.stream().forEach(field -> {
-          mask.addFieldsItem(field);
+          mask.getFields().add(field);
           isMetadataUpdated.set(true);
         });
       }
@@ -235,16 +227,16 @@ public class MaskingUpdateSchedule {
           isMetadataUpdated.set(true);
         });
       }
-      if (!cluster.getMasking().contains(mask)) {
-        cluster.getMasking().add(mask);
+      if (!cluster.getOriginalProperties().getMasking().contains(mask)) {
+        cluster.getOriginalProperties().getMasking().add(mask);
         saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
       }
 
     }
   }
 
-  private void updateFieldLevelMasking(ApplicationConfigPropertiesKafkaClustersInnerDTO cluster, String topic,
-                                       ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO mask,
+  private void updateFieldLevelMasking(KafkaCluster cluster, String topic,
+                                       ClustersProperties.@Valid @MonotonicNonNull Masking mask,
                                        AtomicBoolean isMetadataUpdated,
                                        SubjectMetadataResponse confluentTopicFieldsResponse) {
     List<String> currentFields = mask.getFields();
@@ -259,7 +251,7 @@ public class MaskingUpdateSchedule {
 
     if (!confluentEntityList.isEmpty()) {
       log.info("Processing fields from confluent: {}", confluentEntityList);
-      mask.type(ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO.TypeEnum.MASK);
+      mask.setType(ClustersProperties.Masking.Type.MASK);
       mask.setMaskingCharsReplacement(defaultMaskingCharsReplacement);
       mask.setTopicValuesPattern(topic);
 
@@ -268,7 +260,7 @@ public class MaskingUpdateSchedule {
 
       if (!fieldsToMask.isEmpty()) {
         fieldsToMask.stream().forEach(field -> {
-          mask.addFieldsItem(field);
+          mask.getFields().add(field);
           isMetadataUpdated.set(true);
         });
       }
@@ -282,8 +274,8 @@ public class MaskingUpdateSchedule {
           isMetadataUpdated.set(true);
         });
       }
-      if (!cluster.getMasking().contains(mask)) {
-        cluster.getMasking().add(mask);
+      if (!cluster.getOriginalProperties().getMasking().contains(mask)) {
+        cluster.getOriginalProperties().getMasking().add(mask);
         saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
       }
     }
@@ -306,7 +298,7 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private List<TagDefinitionClassificationResponse> tagDefinitionResponse(String baseUrl,
-                                  ApplicationConfigPropertiesKafkaClustersInnerSchemaRegistryAuthDTO authentication) {
+                                                                          ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication) {
     try {
       String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
           authentication.getPassword());
@@ -328,8 +320,8 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private SchemaMetadataResponse metadataTopicResponses(String baseUrl,
-                                      ApplicationConfigPropertiesKafkaClustersInnerSchemaRegistryAuthDTO authentication,
-                                      String tag) {
+                                                        ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication,
+                                                        String tag) {
     try {
       String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
           authentication.getPassword());
@@ -350,8 +342,8 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private SubjectMetadataResponse retrieveSubjectMetadataResponses(String baseUrl,
-                                      ApplicationConfigPropertiesKafkaClustersInnerSchemaRegistryAuthDTO authentication,
-                                      String topic) {
+                                                                   ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication,
+                                                                   String topic) {
     try {
       String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
           authentication.getPassword());
@@ -391,14 +383,14 @@ public class MaskingUpdateSchedule {
   }
 
   private DynamoMaskingEntity mapperMaskingDtoToEntity(String cluster,
-                                            ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO source) {
+                                                       ClustersProperties.@Valid @MonotonicNonNull Masking source) {
     DynamoMaskingEntity target = new DynamoMaskingEntity();
     if (source.getTopicValuesPattern() != null) {
       target.setName(String.format("%s_%s", cluster, source.getTopicValuesPattern()));
     } else {
       target.setName(String.format("%s_%s", cluster, source.getTopicKeysPattern()));
     }
-    target.setType(source.getType().getValue());
+    target.setType(source.getType().name());
     target.setReplacement(source.getReplacement());
     target.setMaskingCharsReplacement(source.getMaskingCharsReplacement());
     target.setTopicKeysPattern(source.getTopicKeysPattern());
