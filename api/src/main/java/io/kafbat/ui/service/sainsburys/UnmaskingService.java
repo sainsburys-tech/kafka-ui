@@ -158,7 +158,6 @@ public class UnmaskingService {
       rbacTopicPermission.setValue(topic);
 
       rbacRole.getPermissions().add(rbacTopicPermission);
-      accessControlService.getRoles().add(rbacRole);
       isRoleAssigned.set(true);
       createDynamoRbac(mapperFromRbacRoleDto(rbacRole));
     } else {
