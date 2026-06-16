@@ -342,8 +342,8 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private SubjectMetadataResponse retrieveSubjectMetadataResponses(String baseUrl,
-                                                                   ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication,
-                                                                   String topic) {
+                                  ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication,
+                                  String topic) {
     try {
       String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
           authentication.getPassword());
