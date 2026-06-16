@@ -300,14 +300,16 @@ public class MaskingUpdateSchedule {
   private List<TagDefinitionClassificationResponse> tagDefinitionResponse(String baseUrl,
                               ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication) {
     try {
-      String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
-          authentication.getPassword());
+      if (baseUrl != null && authentication != null) {
+        String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
+            authentication.getPassword());
 
-      ResponseEntity<List<TagDefinitionClassificationResponse>> tagDefinitions =
-          confluentApiClient.retrieveTagDefinitions(URI.create(baseUrl), authorization);
+        ResponseEntity<List<TagDefinitionClassificationResponse>> tagDefinitions =
+            confluentApiClient.retrieveTagDefinitions(URI.create(baseUrl), authorization);
 
-      if (tagDefinitions != null && tagDefinitions.getStatusCode().is2xxSuccessful()) {
-        return tagDefinitions.getBody();
+        if (tagDefinitions != null && tagDefinitions.getStatusCode().is2xxSuccessful()) {
+          return tagDefinitions.getBody();
+        }
       }
     } catch (FeignException e) {
       log.error("Feign API call error with message: {}", e.getMessage());
