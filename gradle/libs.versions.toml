@@ -1,5 +1,5 @@
 [versions]
-spring-boot = '3.5.3'
+spring-boot = '3.5.6'
 nimbus-jose-jwt = '10.0.2'
 
 aws-msk-auth = '2.3.0'
@@ -140,3 +140,7 @@ victools-jsonschema-generator = {module = 'com.github.victools:jsonschema-genera
 
 # CVE fixes
 reactor-netty-http = {module = 'io.projectreactor.netty:reactor-netty-http', version = '1.2.8'}
+
+
+#Sainsburys External Services OpenFiegn
+openfeign = {module = 'org.springframework.cloud:spring-cloud-starter-openfeign'}

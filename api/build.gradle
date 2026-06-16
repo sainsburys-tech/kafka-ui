@@ -78,6 +78,18 @@ dependencies {
     implementation (libs.google.oauth.client) {
         because("CVE Fix: It is excluded above because of a vulnerability")
     }
+    //Custom Sainsburys API Integration
+    implementation libs.openfeign
+
+    // Custom Sainsburys DynamoDb
+    implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.12.200'
+    implementation 'io.github.boostchicken:spring-data-dynamodb:5.2.5'
+    implementation 'com.amazonaws:aws-java-sdk-sts:1.12.200'
+
+    // Custom Sainsburys Retryable
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
 
     // Annotation processors
     implementation libs.lombok

@@ -11,12 +11,14 @@ import io.kafbat.ui.model.KafkaCluster;
 import io.kafbat.ui.model.MetricsConfig;
 import io.kafbat.ui.service.ksql.KsqlApiClient;
 import io.kafbat.ui.service.masking.DataMasking;
+import io.kafbat.ui.service.sainsburys.DynamoClusterProperties;
 import io.kafbat.ui.sr.ApiClient;
 import io.kafbat.ui.sr.api.KafkaSrClientApi;
 import io.kafbat.ui.util.KafkaServicesValidation;
 import io.kafbat.ui.util.ReactiveFailover;
 import io.kafbat.ui.util.WebClientConfigurator;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,14 +44,18 @@ public class KafkaClusterFactory {
 
   private final DataSize webClientMaxBuffSize;
   private final Duration responseTimeout;
+  private final DynamoClusterProperties dynamoClusterProperties;
 
-  public KafkaClusterFactory(WebclientProperties webclientProperties) {
+
+  public KafkaClusterFactory(WebclientProperties webclientProperties,
+                             DynamoClusterProperties dynamoClusterProperties) {
     this.webClientMaxBuffSize = Optional.ofNullable(webclientProperties.getMaxInMemoryBufferSize())
         .map(DataSize::parse)
         .orElse(DEFAULT_WEBCLIENT_BUFFER);
     this.responseTimeout = Optional.ofNullable(webclientProperties.getResponseTimeoutMs())
         .map(Duration::ofMillis)
         .orElse(DEFAULT_RESPONSE_TIMEOUT);
+    this.dynamoClusterProperties = dynamoClusterProperties;
   }
 
   public KafkaCluster create(ClustersProperties properties,
@@ -62,6 +68,12 @@ public class KafkaClusterFactory {
     builder.consumerProperties(convertProperties(clusterProperties.getConsumerProperties()));
     builder.producerProperties(convertProperties(clusterProperties.getProducerProperties()));
     builder.readOnly(clusterProperties.isReadOnly());
+    List<ClustersProperties.Masking> maskingList = clusterProperties.getMasking();
+    if (maskingList == null) {
+      maskingList =
+          new ArrayList<>(dynamoClusterProperties.retrieveDynamoMaskingToMaskingList(clusterProperties.getName()));
+    }
+    builder.masking(DataMasking.create(maskingList));
     builder.masking(DataMasking.create(clusterProperties.getMasking()));
     builder.pollingSettings(PollingSettings.create(clusterProperties, properties));
 
