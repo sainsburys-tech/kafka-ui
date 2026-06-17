@@ -277,7 +277,8 @@ public class MaskingUpdateSchedule {
           isMetadataUpdated.set(true);
         });
       }
-      if (cluster.getOriginalProperties().getMasking() != null && !cluster.getOriginalProperties().getMasking().contains(mask)) {
+      if (cluster.getOriginalProperties().getMasking() != null
+          && !cluster.getOriginalProperties().getMasking().contains(mask)) {
         cluster.getOriginalProperties().getMasking().add(mask);
         saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
       }
