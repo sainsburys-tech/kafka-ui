@@ -163,21 +163,24 @@ public class MaskingUpdateSchedule {
                              String tag,
                              AtomicBoolean isMetadataUpdated) {
     String baseUrl = cluster.getOriginalProperties().getSchemaRegistry();
+    log.info("MaskClusterStorage Fetch Topics for cluster: {}", cluster.getName());
     SchemaMetadataResponse confluentResponse = metadataTopicResponses(baseUrl, authentication, tag);
 
     if (confluentResponse == null) {
-      log.error("Tag metadata API did not return correctly for baseUrl: {} and tag: {}", baseUrl, tag);
+      log.info("MaskClusterStorage Tag metadata API did not return correctly for baseUrl: {} and tag: {}", baseUrl, tag);
       return;
     }
 
     List<EntityAttributes> confluentTopicList = new ArrayList<>();
 
     if (tag == null) {
+      log.info("MaskClusterStorage Processing No Tag Topics for cluster: {}", cluster.getName());
       confluentTopicList = confluentResponse.getEntities().stream()
           .filter(Predicate.not(e -> e.getClassificationNames().contains(defaultNonPiiTag)))
           .map(Entity::getAttributes).filter(Objects::nonNull)
           .toList();
     } else {
+      log.info("MaskClusterStorage Processing Tag: {} Topics for cluster: {}", tag, cluster.getName());
       confluentTopicList = confluentResponse.getEntities().stream()
           .filter(e -> e.getClassificationNames().contains(tag))
           .map(Entity::getAttributes).filter(Objects::nonNull)
@@ -185,33 +188,39 @@ public class MaskingUpdateSchedule {
     }
 
     confluentTopicList.forEach(topic -> {
+      log.info("MaskClusterStorage Processing Topic: {} for cluster: {}", topic.getName(), cluster.getName());
       if (topic.getQualifiedName() != null) {
         if (cluster.getOriginalProperties().getMasking() == null
             || cluster.getOriginalProperties().getMasking().isEmpty()) {
 
+          log.info("MaskClusterStorage Fetch Topic: {} Metadata", topic.getName());
           SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
               authentication,
               topic.getName());
 
           if (confluentTopicFieldsResponse != null
               && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+            log.info("MaskClusterStorage Field Mask Topic: {}", topic.getName());
             updateFieldLevelMasking(cluster, topic.getName(),
                 new ClustersProperties.Masking(),
                 isMetadataUpdated,
                 confluentTopicFieldsResponse);
           } else {
+            log.info("MaskClusterStorage Topic Mask: {}", topic.getName());
             updateTopicLevelMasking(cluster, topic.getName(),
                 new ClustersProperties.Masking(),
                 isMetadataUpdated,
                 confluentTopicFieldsResponse);
           }
         } else {
+          log.info("MaskClusterStorage Fetch2 Topic: {} Metadata", topic.getName());
           SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
               authentication,
               topic.getName());
 
           if (confluentTopicFieldsResponse != null
               && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+            log.info("MaskClusterStorage Field2 Mask Topic: {}", topic.getName());
             List<ClustersProperties.@Valid Masking> fieldMaskList =
                 cluster.getOriginalProperties().getMasking().stream()
                     .filter(mask -> mask.getType().equals(
@@ -230,6 +239,7 @@ public class MaskingUpdateSchedule {
                   isMetadataUpdated, confluentTopicFieldsResponse);
             }
           } else {
+            log.info("MaskClusterStorage Topic2 Mask: {}", topic.getName());
             List<ClustersProperties.@Valid Masking> topicMaskList =
                 cluster.getOriginalProperties().getMasking().stream()
                     .filter(mask -> mask.getType().equals(
@@ -260,16 +270,16 @@ public class MaskingUpdateSchedule {
                                        ClustersProperties.@Valid Masking mask,
                                        AtomicBoolean isMetadataUpdated,
                                        SubjectMetadataResponse confluentTopicFieldsResponse) {
-    log.info("Topic Level Masking for topic name: {}", topic);
+    log.info("MaskClusterStorage Topic Level Masking for topic name: {}", topic);
     if (confluentTopicFieldsResponse == null) {
-      log.error("Topic schema not found");
+      log.error("MaskClusterStorage Topic schema not found");
       return;
     }
     ConfluentAvroSchema confluentAvroSchema = avroSchemaMapper(confluentTopicFieldsResponse.getSchema());
 
     if (confluentAvroSchema != null && !confluentAvroSchema.getFields().isEmpty()) {
 
-      log.info("Processing fields from confluent subject: {}", confluentTopicFieldsResponse.getSubject());
+      log.info("MaskClusterStorage Processing fields from confluent subject: {}", confluentTopicFieldsResponse.getSubject());
       mask.setType(ClustersProperties.Masking.Type.REPLACE);
       mask.setReplacement(defaultMaskingTopicReplacement);
       mask.setTopicValuesPattern(topic);
@@ -310,7 +320,7 @@ public class MaskingUpdateSchedule {
                                        AtomicBoolean isMetadataUpdated,
                                        SubjectMetadataResponse confluentTopicFieldsResponse) {
     List<String> currentFields = mask.getFields();
-    log.info("Field Level Masking for topic name: {}", topic);
+    log.info("MaskClusterStorage Field Level Masking for topic name: {}", topic);
     ConfluentAvroSchema confluentAvroSchema = avroSchemaMapper(confluentTopicFieldsResponse.getSchema());
 
     List<String> confluentEntityList = confluentAvroSchema.getFields().stream()
@@ -320,7 +330,7 @@ public class MaskingUpdateSchedule {
         .toList();
 
     if (!confluentEntityList.isEmpty()) {
-      log.info("Processing fields from confluent: {}", confluentEntityList);
+      log.info("MaskClusterStorage Processing fields from confluent: {}", confluentEntityList);
       mask.setType(ClustersProperties.Masking.Type.MASK);
       mask.setMaskingCharsReplacement(defaultMaskingCharsReplacement);
       mask.setTopicValuesPattern(topic);
@@ -370,6 +380,7 @@ public class MaskingUpdateSchedule {
   private List<TagDefinitionClassificationResponse> tagDefinitionResponse(String baseUrl,
                 @MonotonicNonNull SchemaRegistryAuth authentication) {
     try {
+      log.info("MaskClusterStorage tagDefinitionResponse");
       if (baseUrl != null && authentication != null) {
         String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
             authentication.password());
@@ -395,6 +406,7 @@ public class MaskingUpdateSchedule {
                             @MonotonicNonNull SchemaRegistryAuth authentication,
                             String tag) {
     try {
+      log.info("MaskClusterStorage metadataTopicResponses");
       String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
           authentication.password());
       ResponseEntity<SchemaMetadataResponse> metadata = null;
@@ -424,6 +436,7 @@ public class MaskingUpdateSchedule {
                                 @MonotonicNonNull SchemaRegistryAuth authentication,
                                 String topic) {
     try {
+      log.info("MaskClusterStorage retrieveSubjectMetadataResponses");
       String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
           authentication.password());
       ResponseEntity<SubjectMetadataResponse> metadata =
@@ -455,6 +468,7 @@ public class MaskingUpdateSchedule {
   )
   private void saveMaskingEntity(DynamoMaskingEntity mask) {
     try {
+      log.info("MaskClusterStorage saveMaskingEntity");
       dynamoMaskingEntityRepository.save(mask);
       log.info("Dynamo Mask saved successfully. {}", mask.getName());
     } catch (Exception e) {
