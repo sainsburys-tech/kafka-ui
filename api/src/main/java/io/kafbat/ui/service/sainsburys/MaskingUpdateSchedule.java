@@ -229,7 +229,7 @@ public class MaskingUpdateSchedule {
                                        AtomicBoolean isMetadataUpdated,
                                        SubjectMetadataResponse confluentTopicFieldsResponse) {
     log.info("Topic Level Masking for topic name: {}", topic);
-    if(confluentTopicFieldsResponse == null) {
+    if (confluentTopicFieldsResponse == null) {
       log.error("Topic schema not found");
       return;
     }
