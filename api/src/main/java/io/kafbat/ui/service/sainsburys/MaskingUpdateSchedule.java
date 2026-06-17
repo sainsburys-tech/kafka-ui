@@ -100,7 +100,8 @@ public class MaskingUpdateSchedule {
               log.info("In cluster MaskClusterStorage: {}", cluster.getName());
               String clusterBaseUrl = cluster.getOriginalProperties().getSchemaRegistry();
               var clusterAuth = mapperClusterSrAuth(cluster);
-              log.info("SchemaRegistry Url MaskClusterStorage: {}", cluster.getOriginalProperties().getSchemaRegistry());
+              log.info("SchemaRegistry Url MaskClusterStorage: {}",
+                  cluster.getOriginalProperties().getSchemaRegistry());
 
               log.info("MaskClusterStorage maskAllByDefault: {}", Boolean.valueOf(maskAllByDefault));
               if (Boolean.valueOf(maskAllByDefault)) {
