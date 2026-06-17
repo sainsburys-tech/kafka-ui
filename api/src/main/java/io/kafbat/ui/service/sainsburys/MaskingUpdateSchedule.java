@@ -10,6 +10,7 @@ import io.kafbat.ui.config.ClustersProperties;
 import io.kafbat.ui.config.sainsburys.ConfluentAuthConfig;
 import io.kafbat.ui.model.ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO;
 import io.kafbat.ui.model.KafkaCluster;
+import io.kafbat.ui.model.sainsburys.SchemaRegistryAuth;
 import io.kafbat.ui.model.sainsburys.confluent.ConfluentAvroField;
 import io.kafbat.ui.model.sainsburys.confluent.ConfluentAvroSchema;
 import io.kafbat.ui.model.sainsburys.confluent.Entity;
@@ -27,6 +28,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,6 +68,13 @@ public class MaskingUpdateSchedule {
   @Value("${sainsburys.masking.rule.tags.schema-field: sainsburys.dataClassification }")
   private String schemaDataClassificationTag;
 
+  private static final Pattern CLIENT_ID_PATTERN =
+      Pattern.compile("clientId=\"([^\"]+)\"");
+
+  private static final Pattern CLIENT_SECRET_PATTERN =
+      Pattern.compile("clientSecret=\"([^\"]+)\"");
+
+
   public MaskingUpdateSchedule(ConfluentApiClient confluentApiClient,
                                ClustersStorage clustersStorage,
                                DynamoClusterProperties dynamoClusterProperties,
@@ -88,7 +98,7 @@ public class MaskingUpdateSchedule {
         clustersStorage.getKafkaClusters()
             .forEach(cluster -> {
               String clusterBaseUrl = cluster.getOriginalProperties().getSchemaRegistry();
-              var clusterAuth = cluster.getOriginalProperties().getSchemaRegistryAuth();
+              var clusterAuth = mapperClusterSrAuth(cluster);
 
               if (Boolean.valueOf(maskAllByDefault)) {
 
@@ -131,7 +141,7 @@ public class MaskingUpdateSchedule {
   }
 
   private void maskProcessor(KafkaCluster cluster,
-                             ClustersProperties.SchemaRegistryAuth authentication,
+                             SchemaRegistryAuth authentication,
                              String tag,
                              AtomicBoolean isMetadataUpdated) {
     String baseUrl = cluster.getOriginalProperties().getSchemaRegistry();
@@ -338,11 +348,11 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private List<TagDefinitionClassificationResponse> tagDefinitionResponse(String baseUrl,
-                ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication) {
+                @MonotonicNonNull SchemaRegistryAuth authentication) {
     try {
       if (baseUrl != null && authentication != null) {
-        String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
-            authentication.getPassword());
+        String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
+            authentication.password());
 
         ResponseEntity<List<TagDefinitionClassificationResponse>> tagDefinitions =
             confluentApiClient.retrieveTagDefinitions(URI.create(baseUrl), authorization);
@@ -362,11 +372,11 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private SchemaMetadataResponse metadataTopicResponses(String baseUrl,
-                            ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication,
+                            @MonotonicNonNull SchemaRegistryAuth authentication,
                             String tag) {
     try {
-      String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
-          authentication.getPassword());
+      String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
+          authentication.password());
       ResponseEntity<SchemaMetadataResponse> metadata = null;
 
       if (tag == null) {
@@ -391,11 +401,11 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private SubjectMetadataResponse retrieveSubjectMetadataResponses(String baseUrl,
-                                ClustersProperties.@MonotonicNonNull SchemaRegistryAuth authentication,
+                                @MonotonicNonNull SchemaRegistryAuth authentication,
                                 String topic) {
     try {
-      String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
-          authentication.getPassword());
+      String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
+          authentication.password());
       ResponseEntity<SubjectMetadataResponse> metadata =
           confluentApiClient.retrieveSubjectMetadata(URI.create(baseUrl), authorization, topic);
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
@@ -447,5 +457,31 @@ public class MaskingUpdateSchedule {
     target.setFields(source.getFields());
     return target;
 
+  }
+
+  private SchemaRegistryAuth mapperClusterSrAuth(KafkaCluster source){
+    var clusterAuth = source.getOriginalProperties().getSchemaRegistryAuth();
+    if (clusterAuth != null) {
+      return new SchemaRegistryAuth(clusterAuth.getUsername(), clusterAuth.getPassword());
+    } else {
+      return extractSchemaRegistryAuth(source.getProperties().getProperty("sasl.jaas.config"));
+    }
+  }
+
+  public static SchemaRegistryAuth extractSchemaRegistryAuth(String jaasConfig) {
+    String clientId = extract(CLIENT_ID_PATTERN, jaasConfig);
+    String clientSecret = extract(CLIENT_SECRET_PATTERN, jaasConfig);
+
+    return new SchemaRegistryAuth(clientId, clientSecret);
+  }
+
+  private static String extract(Pattern pattern, String value) {
+    Matcher matcher = pattern.matcher(value);
+    if (matcher.find()) {
+      return matcher.group(1);
+    }
+
+    throw new IllegalArgumentException(
+        "Could not find " + pattern.pattern() + " in JAAS config");
   }
 }
