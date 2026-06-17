@@ -22,9 +22,11 @@ import io.kafbat.ui.repository.DynamoMaskingEntityRepository;
 import io.kafbat.ui.service.ClustersStorage;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +49,12 @@ public class MaskingUpdateSchedule {
 
   @Value("${sainsburys.masking.feature.enabled: 'false' }")
   private String isMaskingEnabled;
+
+  @Value("${sainsburys.masking.rule.mask-all-by-default.enabled: 'false' }")
+  private String maskAllByDefault;
+
+  @Value("${sainsburys.masking.rule.mask-all-by-default.tag-name: 'NON_PII' }")
+  private String defaultNonPiiTag;
 
   @Value("${sainsburys.masking.rule.chars-replacement: X, x, x, - }")
   private List<String> defaultMaskingCharsReplacement;
@@ -73,6 +81,7 @@ public class MaskingUpdateSchedule {
     try {
       if (Boolean.valueOf(isMaskingEnabled)) {
         log.info("Update masking tags dynamic config start");
+        log.info("Processing MaskClusterStorage: {}", clustersStorage.getKafkaClusters().isEmpty());
 
         AtomicBoolean isMetadataUpdated = new AtomicBoolean(false);
 
@@ -81,15 +90,30 @@ public class MaskingUpdateSchedule {
               String clusterBaseUrl = cluster.getOriginalProperties().getSchemaRegistry();
               var clusterAuth = cluster.getOriginalProperties().getSchemaRegistryAuth();
 
-              List<TagDefinitionClassificationResponse> tagDefinitionList = tagDefinitionResponse(clusterBaseUrl,
-                  clusterAuth);
+              if (Boolean.valueOf(maskAllByDefault)) {
 
-              if (tagDefinitionList != null && !tagDefinitionList.isEmpty()) {
-                tagDefinitionList.stream().map(TagDefinitionClassificationResponse::getName)
-                    .forEach(tag -> {
-                      log.info("Tag found for cluster: {}, tag: {}", cluster.getName(), tag);
-                      maskProcessor(cluster, clusterAuth, tag, isMetadataUpdated);
-                    });
+                log.info("Mask all topics by default for cluster: {}", cluster.getName());
+                try {
+                  maskProcessor(cluster, clusterAuth, null, isMetadataUpdated);
+                } catch (Exception e) {
+                  log.error("Failed processing cluster masking {} message: {}", cluster.getName(), e.getMessage());
+                }
+
+              } else {
+                List<TagDefinitionClassificationResponse> tagDefinitionList = tagDefinitionResponse(clusterBaseUrl,
+                    clusterAuth);
+
+                if (tagDefinitionList != null && !tagDefinitionList.isEmpty()) {
+                  tagDefinitionList.stream().map(TagDefinitionClassificationResponse::getName)
+                      .forEach(tag -> {
+                        log.info("Tag found for cluster: {}, tag: {}", cluster.getName(), tag);
+                        try {
+                          maskProcessor(cluster, clusterAuth, tag, isMetadataUpdated);
+                        } catch (Exception e) {
+                          log.error("Failed processing cluster masking {} message: {}", cluster.getName(), e.getMessage());
+                        }
+                      });
+                }
               }
             });
 
@@ -117,10 +141,19 @@ public class MaskingUpdateSchedule {
       return;
     }
 
-    List<EntityAttributes> confluentTopicList = confluentResponse.getEntities().stream()
-        .filter(e -> e.getClassificationNames().contains(tag))
-        .map(Entity::getAttributes).filter(Objects::nonNull)
-        .toList();
+    List<EntityAttributes> confluentTopicList = new ArrayList<>();
+
+    if (tag == null) {
+      confluentTopicList = confluentResponse.getEntities().stream()
+          .filter(Predicate.not(e -> e.getClassificationNames().contains(defaultNonPiiTag)))
+          .map(Entity::getAttributes).filter(Objects::nonNull)
+          .toList();
+    } else {
+      confluentTopicList = confluentResponse.getEntities().stream()
+          .filter(e -> e.getClassificationNames().contains(tag))
+          .map(Entity::getAttributes).filter(Objects::nonNull)
+          .toList();
+    }
 
     confluentTopicList.forEach(topic -> {
       if (topic.getQualifiedName() != null) {
@@ -130,7 +163,7 @@ public class MaskingUpdateSchedule {
               authentication,
               topic.getName());
 
-          if (confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+          if (confluentTopicFieldsResponse != null && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
             updateFieldLevelMasking(cluster, topic.getName(),
                 new ClustersProperties.Masking(),
                 isMetadataUpdated,
@@ -146,7 +179,7 @@ public class MaskingUpdateSchedule {
               authentication,
               topic.getName());
 
-          if (confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+          if (confluentTopicFieldsResponse != null && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
             List<ClustersProperties.@Valid Masking> fieldMaskList =
                 cluster.getOriginalProperties().getMasking().stream()
                     .filter(mask -> mask.getType().equals(
@@ -196,6 +229,10 @@ public class MaskingUpdateSchedule {
                                        AtomicBoolean isMetadataUpdated,
                                        SubjectMetadataResponse confluentTopicFieldsResponse) {
     log.info("Topic Level Masking for topic name: {}", topic);
+    if(confluentTopicFieldsResponse == null) {
+      log.error("Topic schema not found");
+      return;
+    }
     ConfluentAvroSchema confluentAvroSchema = avroSchemaMapper(confluentTopicFieldsResponse.getSchema());
 
     if (confluentAvroSchema != null && !confluentAvroSchema.getFields().isEmpty()) {
@@ -327,8 +364,15 @@ public class MaskingUpdateSchedule {
     try {
       String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.getUsername(),
           authentication.getPassword());
-      ResponseEntity<SchemaMetadataResponse> metadata = confluentApiClient.retrieveTopicMetadata(URI.create(baseUrl),
-          authorization, tag);
+      ResponseEntity<SchemaMetadataResponse> metadata = null;
+
+      if (tag == null) {
+        metadata = confluentApiClient.retrieveTopicMetadata(URI.create(baseUrl),
+            authorization);
+      } else {
+        metadata = confluentApiClient.retrieveTopicMetadata(URI.create(baseUrl),
+            authorization, tag);
+      }
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
         return metadata.getBody();
       }
