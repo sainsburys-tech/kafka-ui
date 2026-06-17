@@ -67,6 +67,9 @@ sainsburys:
     feature:
       enabled: ${SAINSBURYS_DATA_MASKING_FEATURE_ENABLED}
     rule:
+      mask-all-by-default:
+        enabled: true # Mask all kafka topics by default
+        tag-name: NON_PII # The Non PII Data CLassification Tag to exclude Non Pii Kafka topics from masking list
       time-to-live: 3600000 #60 minutes in millis
       chars-replacement:
         - X
