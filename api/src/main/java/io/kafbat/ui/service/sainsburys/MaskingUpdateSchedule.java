@@ -140,7 +140,7 @@ public class MaskingUpdateSchedule {
                 }
 
               } catch (Exception e) {
-                log.error("MaskClusterStorage Failed processing cluster masking {} message: {}", cluster.getName(),
+                log.info("MaskClusterStorage Failed processing cluster masking {} message: {}", cluster.getName(),
                     e.getMessage());
               }
             });
