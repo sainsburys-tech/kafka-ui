@@ -14,8 +14,8 @@ management:
 
 logging:
   level:
-    root: INFO
-    io.kafbat.ui: DEBUG
+    root: DEBUG
+    io.kafbat.ui: TRACE
     reactor.netty.http.server.AccessLog: INFO
     org.hibernate.validator: WARN
 aws:
