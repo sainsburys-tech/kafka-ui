@@ -97,27 +97,36 @@ public class MaskingUpdateSchedule {
 
         clustersStorage.getKafkaClusters()
             .forEach(cluster -> {
+              log.info("In cluster MaskClusterStorage: {}", cluster.getName());
               String clusterBaseUrl = cluster.getOriginalProperties().getSchemaRegistry();
               var clusterAuth = mapperClusterSrAuth(cluster);
+              log.info("SchemaRegistry Url MaskClusterStorage: {}", cluster.getOriginalProperties().getSchemaRegistry());
 
+              log.info("MaskClusterStorage maskAllByDefault: {}", Boolean.valueOf(maskAllByDefault));
               if (Boolean.valueOf(maskAllByDefault)) {
 
                 log.info("Mask all topics by default for cluster: {}", cluster.getName());
                 try {
+
+                  log.info("MaskClusterStorage maskProcessor: {}", Boolean.valueOf(maskAllByDefault));
                   maskProcessor(cluster, clusterAuth, null, isMetadataUpdated);
                 } catch (Exception e) {
                   log.error("Failed processing cluster masking {} message: {}", cluster.getName(), e.getMessage());
                 }
 
               } else {
+
+                log.info("MaskClusterStorage get tagDefinitionList");
                 List<TagDefinitionClassificationResponse> tagDefinitionList = tagDefinitionResponse(clusterBaseUrl,
                     clusterAuth);
 
                 if (tagDefinitionList != null && !tagDefinitionList.isEmpty()) {
+                  log.info("MaskClusterStorage processing tagDefinitionList");
                   tagDefinitionList.stream().map(TagDefinitionClassificationResponse::getName)
                       .forEach(tag -> {
-                        log.info("Tag found for cluster: {}, tag: {}", cluster.getName(), tag);
+                        log.info("MaskClusterStorage Tag found for cluster: {}, tag: {}", cluster.getName(), tag);
                         try {
+                          log.info("MaskClusterStorage maskProcessor: {}", Boolean.valueOf(maskAllByDefault));
                           maskProcessor(cluster, clusterAuth, tag, isMetadataUpdated);
                         } catch (Exception e) {
                           log.error("Failed processing cluster masking {} message: {}", cluster.getName(),
@@ -129,7 +138,7 @@ public class MaskingUpdateSchedule {
             });
 
         if (isMetadataUpdated.get()) {
-          log.info("DynamoDB Masking Config Refresh");
+          log.info("MaskClusterStorage DynamoDB Masking Config Refresh");
           dynamoClusterProperties.loadMaskingConfiguration();
         }
       } else {
@@ -138,6 +147,7 @@ public class MaskingUpdateSchedule {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+    log.info("MaskClusterStorage Masking Job Completed");
   }
 
   private void maskProcessor(KafkaCluster cluster,
@@ -438,6 +448,7 @@ public class MaskingUpdateSchedule {
   private void saveMaskingEntity(DynamoMaskingEntity mask) {
     try {
       dynamoMaskingEntityRepository.save(mask);
+      log.info("Dynamo Mask saved successfully. {}", mask.getName());
     } catch (Exception e) {
       log.error("Dynamo Masking config failed with message: {}", e.getMessage());
     }
