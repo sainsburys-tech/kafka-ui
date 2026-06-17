@@ -168,7 +168,7 @@ public class MaskingUpdateSchedule {
 
     confluentTopicList.forEach(topic -> {
       if (topic.getQualifiedName() != null) {
-        if (cluster.getOriginalProperties().getMasking().isEmpty()) {
+        if (cluster.getOriginalProperties().getMasking() == null || cluster.getOriginalProperties().getMasking().isEmpty()) {
 
           SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
               authentication,
@@ -277,7 +277,7 @@ public class MaskingUpdateSchedule {
           isMetadataUpdated.set(true);
         });
       }
-      if (!cluster.getOriginalProperties().getMasking().contains(mask)) {
+      if (cluster.getOriginalProperties().getMasking() != null && !cluster.getOriginalProperties().getMasking().contains(mask)) {
         cluster.getOriginalProperties().getMasking().add(mask);
         saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
       }
