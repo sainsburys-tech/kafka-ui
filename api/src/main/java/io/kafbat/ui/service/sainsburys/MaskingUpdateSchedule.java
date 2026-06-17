@@ -168,7 +168,8 @@ public class MaskingUpdateSchedule {
 
     confluentTopicList.forEach(topic -> {
       if (topic.getQualifiedName() != null) {
-        if (cluster.getOriginalProperties().getMasking() == null || cluster.getOriginalProperties().getMasking().isEmpty()) {
+        if (cluster.getOriginalProperties().getMasking() == null
+            || cluster.getOriginalProperties().getMasking().isEmpty()) {
 
           SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
               authentication,
