@@ -167,7 +167,8 @@ public class MaskingUpdateSchedule {
     SchemaMetadataResponse confluentResponse = metadataTopicResponses(baseUrl, authentication, tag);
 
     if (confluentResponse == null) {
-      log.info("MaskClusterStorage Tag metadata API did not return correctly for baseUrl: {} and tag: {}", baseUrl, tag);
+      log.info("MaskClusterStorage Tag metadata API did not return correctly for baseUrl: {} and tag: {}", baseUrl,
+          tag);
       return;
     }
 
@@ -279,7 +280,8 @@ public class MaskingUpdateSchedule {
 
     if (confluentAvroSchema != null && !confluentAvroSchema.getFields().isEmpty()) {
 
-      log.info("MaskClusterStorage Processing fields from confluent subject: {}", confluentTopicFieldsResponse.getSubject());
+      log.info("MaskClusterStorage Processing fields from confluent subject: {}",
+          confluentTopicFieldsResponse.getSubject());
       mask.setType(ClustersProperties.Masking.Type.REPLACE);
       mask.setReplacement(defaultMaskingTopicReplacement);
       mask.setTopicValuesPattern(topic);
