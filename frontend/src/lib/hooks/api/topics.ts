@@ -313,7 +313,7 @@ export function useDataUnmask(props: GetTopicDetailsRequest) {
   const client = useQueryClient();
   return useMutation(
     (message: UnmaskRequest) =>
-      unmaskingApi.sendUnmaskRequest({ ...props, unmaskRequest: message }),
+      unmaskingApi.dataUnmasking({ ...props, unmaskRequest: message }),
     {
       onSuccess: () => {
         showSuccessAlert({
