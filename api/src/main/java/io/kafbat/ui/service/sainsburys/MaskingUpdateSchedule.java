@@ -164,8 +164,8 @@ public class MaskingUpdateSchedule {
               authentication,
               topic.getName());
 
-          if (confluentTopicFieldsResponse != null &&
-              confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+          if (confluentTopicFieldsResponse != null
+              && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
             updateFieldLevelMasking(cluster, topic.getName(),
                 new ClustersProperties.Masking(),
                 isMetadataUpdated,
@@ -181,8 +181,8 @@ public class MaskingUpdateSchedule {
               authentication,
               topic.getName());
 
-          if (confluentTopicFieldsResponse != null &&
-              confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+          if (confluentTopicFieldsResponse != null
+              && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
             List<ClustersProperties.@Valid Masking> fieldMaskList =
                 cluster.getOriginalProperties().getMasking().stream()
                     .filter(mask -> mask.getType().equals(
