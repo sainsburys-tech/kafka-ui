@@ -459,7 +459,7 @@ public class MaskingUpdateSchedule {
 
   }
 
-  private SchemaRegistryAuth mapperClusterSrAuth(KafkaCluster source){
+  private SchemaRegistryAuth mapperClusterSrAuth(KafkaCluster source) {
     var clusterAuth = source.getOriginalProperties().getSchemaRegistryAuth();
     if (clusterAuth != null) {
       return new SchemaRegistryAuth(clusterAuth.getUsername(), clusterAuth.getPassword());
