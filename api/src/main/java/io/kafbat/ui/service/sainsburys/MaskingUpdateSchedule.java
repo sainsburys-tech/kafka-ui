@@ -10,7 +10,6 @@ import io.kafbat.ui.client.sainsburys.ConfluentApiClient;
 import io.kafbat.ui.config.ClustersProperties;
 import io.kafbat.ui.config.sainsburys.ConfluentAuthConfig;
 import io.kafbat.ui.exception.ValidationException;
-import io.kafbat.ui.model.ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO;
 import io.kafbat.ui.model.KafkaCluster;
 import io.kafbat.ui.model.sainsburys.SchemaRegistryAuth;
 import io.kafbat.ui.model.sainsburys.confluent.ConfluentAvroField;
@@ -568,7 +567,7 @@ public class MaskingUpdateSchedule {
         "Could not find " + pattern.pattern() + " in JAAS config");
   }
 
-  public String generateBearerToken(String baseUrl, String clientId, String clientSecret, String scope){
+  public String generateBearerToken(String baseUrl, String clientId, String clientSecret, String scope) {
     if (!baseUrl.endsWith("/token")) {
       baseUrl = baseUrl.endsWith("/") ? baseUrl + "token" : baseUrl + "/token";
     }
@@ -586,10 +585,11 @@ public class MaskingUpdateSchedule {
           && response.getBody().containsKey("access_token")) {
         return (String) response.getBody().get("access_token");
       }
-      throw new IllegalStateException("Authentication failed: 'access_token' was missing from response.");
+      throw new IllegalStateException("MaskClusterStorage Authentication failed: " +
+          "'access_token' was missing from response.");
 
     } catch (Exception e) {
-      throw new RuntimeException("Failed to pull token against absolute URL target: " + baseUrl, e);
+      throw new RuntimeException("MaskClusterStorage Failed to pull token against absolute URL target: " + baseUrl, e);
     }
 
   }
