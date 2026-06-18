@@ -281,6 +281,11 @@ public class MaskingUpdateSchedule {
     log.info("MaskClusterStorage Topic Level Masking for topic name: {}", topic);
     if (confluentTopicFieldsResponse == null) {
       log.error("MaskClusterStorage Topic schema not found");
+      mask.setType(ClustersProperties.Masking.Type.REPLACE);
+      mask.setReplacement(defaultMaskingTopicReplacement);
+      mask.setTopicValuesPattern(topic);
+      isMetadataUpdated.set(true);
+      saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
       throw new ValidationException("Topic schema not found for topic: " + topic);
     }
     ConfluentAvroSchema confluentAvroSchema = avroSchemaMapper(confluentTopicFieldsResponse.getSchema());
