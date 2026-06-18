@@ -1,5 +1,5 @@
 package io.kafbat.ui.model.sainsburys;
 
-public record SchemaRegistryAuth(String username, String password) {
+public record SchemaRegistryAuth(String username, String password, String scope) {
 }
 

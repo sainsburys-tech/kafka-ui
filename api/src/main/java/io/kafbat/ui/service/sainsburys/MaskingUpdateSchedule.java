@@ -5,6 +5,7 @@ import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputExceededExce
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
+import io.kafbat.ui.client.sainsburys.AzureEntraAuthClient;
 import io.kafbat.ui.client.sainsburys.ConfluentApiClient;
 import io.kafbat.ui.config.ClustersProperties;
 import io.kafbat.ui.config.sainsburys.ConfluentAuthConfig;
@@ -25,7 +26,9 @@ import io.kafbat.ui.service.ClustersStorage;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -47,6 +50,7 @@ import org.springframework.stereotype.Service;
 public class MaskingUpdateSchedule {
 
   private final ConfluentApiClient confluentApiClient;
+  private final AzureEntraAuthClient azureAuthClient;
   private final ClustersStorage clustersStorage;
   private final DynamoClusterProperties dynamoClusterProperties;
   private final DynamoMaskingEntityRepository dynamoMaskingEntityRepository;
@@ -75,12 +79,16 @@ public class MaskingUpdateSchedule {
   private static final Pattern CLIENT_SECRET_PATTERN =
       Pattern.compile("clientSecret=\"([^\"]+)\"");
 
+  private static final Pattern CLIENT_SCOPE_PATTERN =
+      Pattern.compile("scope=\"([^\"]+)\"");
 
-  public MaskingUpdateSchedule(ConfluentApiClient confluentApiClient,
+
+  public MaskingUpdateSchedule(ConfluentApiClient confluentApiClient, AzureEntraAuthClient azureAuthClient,
                                ClustersStorage clustersStorage,
                                DynamoClusterProperties dynamoClusterProperties,
                                DynamoMaskingEntityRepository dynamoMaskingEntityRepository) {
     this.confluentApiClient = confluentApiClient;
+    this.azureAuthClient = azureAuthClient;
     this.clustersStorage = clustersStorage;
     this.dynamoClusterProperties = dynamoClusterProperties;
     this.dynamoMaskingEntityRepository = dynamoMaskingEntityRepository;
@@ -102,6 +110,9 @@ public class MaskingUpdateSchedule {
 
                 log.info("In cluster MaskClusterStorage: {}", cluster.getName());
                 String clusterBaseUrl = cluster.getOriginalProperties().getSchemaRegistry();
+                String authUrl = cluster.getProperties() != null ?
+                    cluster.getProperties().getProperty("sasl.oauthbearer.token.endpoint.url") : null;
+
                 var clusterAuth = mapperClusterSrAuth(cluster);
                 log.info("SchemaRegistry Url MaskClusterStorage: {}",
                     cluster.getOriginalProperties().getSchemaRegistry());
@@ -122,6 +133,7 @@ public class MaskingUpdateSchedule {
 
                   log.info("MaskClusterStorage get tagDefinitionList");
                   List<TagDefinitionClassificationResponse> tagDefinitionList = tagDefinitionResponse(clusterBaseUrl,
+                      authUrl,
                       clusterAuth);
 
                   if (tagDefinitionList != null && !tagDefinitionList.isEmpty()) {
@@ -164,8 +176,11 @@ public class MaskingUpdateSchedule {
                              String tag,
                              AtomicBoolean isMetadataUpdated) {
     String baseUrl = cluster.getOriginalProperties().getSchemaRegistry();
+    String authUrl = cluster.getProperties() != null ?
+        cluster.getProperties().getProperty("sasl.oauthbearer.token.endpoint.url") : null;
+
     log.info("MaskClusterStorage Fetch Topics for cluster: {}", cluster.getName());
-    SchemaMetadataResponse confluentResponse = metadataTopicResponses(baseUrl, authentication, tag);
+    SchemaMetadataResponse confluentResponse = metadataTopicResponses(baseUrl, authUrl, authentication, tag);
 
     if (confluentResponse == null) {
       log.info("MaskClusterStorage Tag metadata API did not return correctly for baseUrl: {} and tag: {}", baseUrl,
@@ -198,7 +213,7 @@ public class MaskingUpdateSchedule {
               || cluster.getOriginalProperties().getMasking().isEmpty()) {
 
             log.info("MaskClusterStorage Fetch Topic: {} Metadata", topic.getName());
-            SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
+            SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl, authUrl,
                 authentication,
                 topic.getName());
 
@@ -218,7 +233,7 @@ public class MaskingUpdateSchedule {
             }
           } else {
             log.info("MaskClusterStorage Fetch2 Topic: {} Metadata", topic.getName());
-            SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
+            SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl, authUrl,
                 authentication,
                 topic.getName());
 
@@ -228,7 +243,7 @@ public class MaskingUpdateSchedule {
               List<ClustersProperties.@Valid Masking> fieldMaskList =
                   cluster.getOriginalProperties().getMasking().stream()
                       .filter(mask -> mask.getType().equals(
-                          ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO.TypeEnum.MASK))
+                          ClustersProperties.Masking.Type.MASK))
                       .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic.getName()))
                       .toList();
 
@@ -247,7 +262,7 @@ public class MaskingUpdateSchedule {
               List<ClustersProperties.@Valid Masking> topicMaskList =
                   cluster.getOriginalProperties().getMasking().stream()
                       .filter(mask -> mask.getType().equals(
-                          ApplicationConfigPropertiesKafkaClustersInnerMaskingInnerDTO.TypeEnum.REPLACE))
+                          ClustersProperties.Masking.Type.REPLACE))
                       .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic.getName()))
                       .toList();
 
@@ -391,13 +406,19 @@ public class MaskingUpdateSchedule {
       retryFor = { FeignException.class },
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
-  private List<TagDefinitionClassificationResponse> tagDefinitionResponse(String baseUrl,
+  private List<TagDefinitionClassificationResponse> tagDefinitionResponse(String baseUrl, String authUrl,
                 @MonotonicNonNull SchemaRegistryAuth authentication) {
     try {
       log.info("MaskClusterStorage tagDefinitionResponse");
       if (baseUrl != null && authentication != null) {
-        String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
-            authentication.password());
+        String authorization = null;
+        if (authentication.scope() == null ) {
+          authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
+              authentication.password());
+        } else {
+          authorization = generateBearerToken(authUrl, authentication.username(), authentication.password(),
+              authentication.scope());
+        }
 
         ResponseEntity<List<TagDefinitionClassificationResponse>> tagDefinitions =
             confluentApiClient.retrieveTagDefinitions(URI.create(baseUrl), authorization);
@@ -416,13 +437,19 @@ public class MaskingUpdateSchedule {
       retryFor = { FeignException.class },
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
-  private SchemaMetadataResponse metadataTopicResponses(String baseUrl,
+  private SchemaMetadataResponse metadataTopicResponses(String baseUrl, String authUrl,
                             @MonotonicNonNull SchemaRegistryAuth authentication,
                             String tag) {
     try {
       log.info("MaskClusterStorage metadataTopicResponses");
-      String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
-          authentication.password());
+      String authorization = null;
+      if (authentication != null && authentication.scope() == null ) {
+        authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
+            authentication.password());
+      } else {
+        authorization = generateBearerToken(authUrl, authentication.username(), authentication.password(),
+            authentication.scope());
+      }
       ResponseEntity<SchemaMetadataResponse> metadata = null;
 
       if (tag == null) {
@@ -446,13 +473,19 @@ public class MaskingUpdateSchedule {
       retryFor = { FeignException.class },
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
-  private SubjectMetadataResponse retrieveSubjectMetadataResponses(String baseUrl,
+  private SubjectMetadataResponse retrieveSubjectMetadataResponses(String baseUrl, String authUrl,
                                 @MonotonicNonNull SchemaRegistryAuth authentication,
                                 String topic) {
     try {
       log.info("MaskClusterStorage retrieveSubjectMetadataResponses");
-      String authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
-          authentication.password());
+      String authorization = null;
+      if (authentication != null && authentication.scope() == null ) {
+        authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
+            authentication.password());
+      } else {
+        authorization = generateBearerToken(authUrl, authentication.username(), authentication.password(),
+            authentication.scope());
+      }
       ResponseEntity<SubjectMetadataResponse> metadata =
           confluentApiClient.retrieveSubjectMetadata(URI.create(baseUrl), authorization, topic);
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
@@ -511,7 +544,7 @@ public class MaskingUpdateSchedule {
   private SchemaRegistryAuth mapperClusterSrAuth(KafkaCluster source) {
     var clusterAuth = source.getOriginalProperties().getSchemaRegistryAuth();
     if (clusterAuth != null) {
-      return new SchemaRegistryAuth(clusterAuth.getUsername(), clusterAuth.getPassword());
+      return new SchemaRegistryAuth(clusterAuth.getUsername(), clusterAuth.getPassword(), null);
     } else {
       return extractSchemaRegistryAuth(source.getProperties().getProperty("sasl.jaas.config"));
     }
@@ -520,8 +553,9 @@ public class MaskingUpdateSchedule {
   public static SchemaRegistryAuth extractSchemaRegistryAuth(String jaasConfig) {
     String clientId = extract(CLIENT_ID_PATTERN, jaasConfig);
     String clientSecret = extract(CLIENT_SECRET_PATTERN, jaasConfig);
+    String scope = extract(CLIENT_SCOPE_PATTERN, jaasConfig);
 
-    return new SchemaRegistryAuth(clientId, clientSecret);
+    return new SchemaRegistryAuth(clientId, clientSecret, scope);
   }
 
   private static String extract(Pattern pattern, String value) {
@@ -532,5 +566,31 @@ public class MaskingUpdateSchedule {
 
     throw new IllegalArgumentException(
         "Could not find " + pattern.pattern() + " in JAAS config");
+  }
+
+  public String generateBearerToken(String baseUrl, String clientId, String clientSecret, String scope){
+    if (!baseUrl.endsWith("/token")) {
+      baseUrl = baseUrl.endsWith("/") ? baseUrl + "token" : baseUrl + "/token";
+    }
+    URI baseUri = URI.create(baseUrl);
+    Map<String, String> formPayload = new HashMap<>();
+    formPayload.put("grant_type", "client_credentials");
+    formPayload.put("client_id", clientId);
+    formPayload.put("client_secret", clientSecret);
+    formPayload.put("scope", scope != null ? scope : "https://graph.microsoft.com/.default");
+
+    try {
+      ResponseEntity<Map<String, Object>> response = azureAuthClient.getAccessToken(baseUri, formPayload);
+
+      if (response != null && response.getStatusCode().is2xxSuccessful()
+          && response.getBody().containsKey("access_token")) {
+        return (String) response.getBody().get("access_token");
+      }
+      throw new IllegalStateException("Authentication failed: 'access_token' was missing from response.");
+
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to pull token against absolute URL target: " + baseUrl, e);
+    }
+
   }
 }
