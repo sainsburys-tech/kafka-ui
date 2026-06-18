@@ -7,7 +7,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 
-@FeignClient(name = "azure-entra-auth-client")
+@FeignClient(name = "azure-entra-auth-client",
+    url = "https://login.microsoftonline.com")
 public interface AzureEntraAuthClient {
 
   @PostMapping(value = "", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
