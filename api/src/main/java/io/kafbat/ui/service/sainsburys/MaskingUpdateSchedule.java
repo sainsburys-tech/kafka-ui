@@ -109,8 +109,8 @@ public class MaskingUpdateSchedule {
 
                 log.info("In cluster MaskClusterStorage: {}", cluster.getName());
                 String clusterBaseUrl = cluster.getOriginalProperties().getSchemaRegistry();
-                String authUrl = cluster.getProperties() != null ?
-                    cluster.getProperties().getProperty("sasl.oauthbearer.token.endpoint.url") : null;
+                String authUrl = cluster.getProperties() != null
+                    ? cluster.getProperties().getProperty("sasl.oauthbearer.token.endpoint.url") : null;
 
                 var clusterAuth = mapperClusterSrAuth(cluster);
                 log.info("SchemaRegistry Url MaskClusterStorage: {}",
@@ -175,8 +175,8 @@ public class MaskingUpdateSchedule {
                              String tag,
                              AtomicBoolean isMetadataUpdated) {
     String baseUrl = cluster.getOriginalProperties().getSchemaRegistry();
-    String authUrl = cluster.getProperties() != null ?
-        cluster.getProperties().getProperty("sasl.oauthbearer.token.endpoint.url") : null;
+    String authUrl = cluster.getProperties() != null
+        ? cluster.getProperties().getProperty("sasl.oauthbearer.token.endpoint.url") : null;
 
     log.info("MaskClusterStorage Fetch Topics for cluster: {}", cluster.getName());
     SchemaMetadataResponse confluentResponse = metadataTopicResponses(baseUrl, authUrl, authentication, tag);
@@ -411,7 +411,7 @@ public class MaskingUpdateSchedule {
       log.info("MaskClusterStorage tagDefinitionResponse");
       if (baseUrl != null && authentication != null) {
         String authorization = null;
-        if (authentication.scope() == null ) {
+        if (authentication.scope() == null) {
           authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
               authentication.password());
         } else {
@@ -442,7 +442,7 @@ public class MaskingUpdateSchedule {
     try {
       log.info("MaskClusterStorage metadataTopicResponses");
       String authorization = null;
-      if (authentication != null && authentication.scope() == null ) {
+      if (authentication != null && authentication.scope() == null) {
         authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
             authentication.password());
       } else {
@@ -478,7 +478,7 @@ public class MaskingUpdateSchedule {
     try {
       log.info("MaskClusterStorage retrieveSubjectMetadataResponses");
       String authorization = null;
-      if (authentication != null && authentication.scope() == null ) {
+      if (authentication != null && authentication.scope() == null) {
         authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
             authentication.password());
       } else {
@@ -585,8 +585,8 @@ public class MaskingUpdateSchedule {
           && response.getBody().containsKey("access_token")) {
         return (String) response.getBody().get("access_token");
       }
-      throw new IllegalStateException("MaskClusterStorage Authentication failed: " +
-          "'access_token' was missing from response.");
+      throw new IllegalStateException("MaskClusterStorage Authentication failed: "
+          + "'access_token' was missing from response.");
 
     } catch (Exception e) {
       throw new RuntimeException("MaskClusterStorage Failed to pull token against absolute URL target: " + baseUrl, e);
