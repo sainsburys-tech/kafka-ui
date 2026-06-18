@@ -1,11 +1,11 @@
 package io.kafbat.ui.client.sainsburys;
 
+import java.net.URI;
+import java.util.Map;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import java.net.URI;
-import java.util.Map;
 
 @FeignClient(name = "azure-entra-auth-client")
 public interface AzureEntraAuthClient {
