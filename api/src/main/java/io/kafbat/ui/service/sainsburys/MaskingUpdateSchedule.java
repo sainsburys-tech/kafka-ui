@@ -98,8 +98,7 @@ public class MaskingUpdateSchedule {
   protected void executeMasking() {
     try {
       if (Boolean.valueOf(isMaskingEnabled)) {
-        log.info("Update masking tags dynamic config start");
-        log.info("Processing MaskClusterStorage: {}", clustersStorage.getKafkaClusters().size());
+        log.info("Started MaskClusterStorage: {}", clustersStorage.getKafkaClusters().size());
 
         AtomicBoolean isMetadataUpdated = new AtomicBoolean(false);
 
@@ -125,7 +124,8 @@ public class MaskingUpdateSchedule {
                     log.info("MaskClusterStorage maskProcessor: {}", Boolean.valueOf(maskAllByDefault));
                     maskProcessor(cluster, clusterAuth, null, isMetadataUpdated);
                   } catch (Exception e) {
-                    log.error("Failed processing cluster masking {} message: {}", cluster.getName(), e.getMessage());
+                    log.error("MaskClusterStorage Failed maskProcessor cluster masking {} message: {}",
+                        cluster.getName(), e.getMessage());
                   }
 
                 } else {
@@ -144,7 +144,8 @@ public class MaskingUpdateSchedule {
                             log.info("MaskClusterStorage maskProcessor: {}", Boolean.valueOf(maskAllByDefault));
                             maskProcessor(cluster, clusterAuth, tag, isMetadataUpdated);
                           } catch (Exception e) {
-                            log.error("Failed processing cluster masking {} message: {}", cluster.getName(),
+                            log.error("MaskClusterStorage Failed maskProcessor cluster masking {} message: {}",
+                                cluster.getName(),
                                 e.getMessage());
                           }
                         });
@@ -303,7 +304,7 @@ public class MaskingUpdateSchedule {
       mask.setTopicValuesPattern(topic);
       isMetadataUpdated.set(true);
       saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
-      throw new ValidationException("Topic schema not found for topic: " + topic);
+      throw new ValidationException("MaskClusterStorage Topic schema not found for topic: " + topic);
     }
     ConfluentAvroSchema confluentAvroSchema = avroSchemaMapper(confluentTopicFieldsResponse.getSchema());
 
@@ -430,7 +431,7 @@ public class MaskingUpdateSchedule {
         }
       }
     } catch (FeignException e) {
-      log.error("Feign API call error with message: {}", e.getMessage());
+      log.error("MaskClusterStorage Feign API call error with message: {}", e.getMessage());
     }
     return null;
   }
@@ -465,7 +466,7 @@ public class MaskingUpdateSchedule {
         return metadata.getBody();
       }
     } catch (FeignException e) {
-      log.error("Feign API call error with message: {}", e.getMessage());
+      log.error("MaskClusterStorage Feign API call error with message: {}", e.getMessage());
 
     }
     return null;
@@ -494,7 +495,7 @@ public class MaskingUpdateSchedule {
         return metadata.getBody();
       }
     } catch (FeignException e) {
-      log.error("Feign API call error with message: {}", e.getMessage());
+      log.error("MaskClusterStorage Feign API call error with message: {}", e.getMessage());
     }
     return null;
   }
@@ -519,9 +520,10 @@ public class MaskingUpdateSchedule {
     try {
       log.info("MaskClusterStorage saveMaskingEntity");
       dynamoMaskingEntityRepository.save(mask);
-      log.info("Dynamo Mask saved successfully. {}", mask.getName());
+      log.info("MaskClusterStorage Dynamo Mask saved successfully. {}", mask.getName());
     } catch (Exception e) {
-      log.error("Dynamo Masking config failed with message: {}", e.getMessage());
+      log.error("MaskClusterStorage Dynamo Masking config: {} failed with message: {}", mask.getName(),
+          e.getMessage());
     }
   }
 

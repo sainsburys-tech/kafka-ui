@@ -72,6 +72,8 @@ public class KafkaClusterFactory {
     if (maskingList == null) {
       maskingList =
           new ArrayList<>(dynamoClusterProperties.retrieveDynamoMaskingToMaskingList(clusterProperties.getName()));
+    } else {
+      maskingList.addAll(dynamoClusterProperties.retrieveDynamoMaskingToMaskingList(clusterProperties.getName()));
     }
     builder.masking(DataMasking.create(maskingList));
     builder.masking(DataMasking.create(clusterProperties.getMasking()));
