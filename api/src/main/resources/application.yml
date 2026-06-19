@@ -58,10 +58,11 @@ sainsburys:
         operations:
           retrieve:
             tagdefs: '/catalog/v1/types/tagdefs?deleted=false'
+            subjects: '/subjects'
             topic: '/catalog/v1/search/basic?type=kafka_topic'
             topic.fields: '/api/v1/search/topics/fields'
             schema: '/api/v1/search/entities?type=sr_field'
-            subject: '/subjects/{topic}-value/versions/latest'
+            subject: '/subjects/{topic}/versions/latest'
 
   masking:
     feature:

@@ -182,13 +182,15 @@ public class MaskingUpdateSchedule {
 
     log.info("MaskClusterStorage Fetch Topics for cluster: {}", cluster.getName());
     SchemaMetadataResponse confluentResponse = metadataTopicResponses(baseUrl, authUrl, authentication, tag);
+    List<String> confluentSubjectsList = new ArrayList<>();
 
     if (confluentResponse == null) {
-      log.info("MaskClusterStorage Tag metadata API did not return correctly for cluster: {}, baseUrl: {} and tag: {}",
+      log.info("MaskClusterStorage Failed to fetch confluent topics for cluster: {}, baseUrl: {} and tag: {}",
           cluster.getName(), baseUrl, tag);
+      confluentSubjectsList = metadataTopicList(baseUrl, authUrl, authentication);
+      log.info("MaskClusterStorage fetch confluent subjects for cluster: {}, baseUrl: {} and topics: {}",
+          cluster.getName(), baseUrl, confluentSubjectsList.size());
 
-      throw new ValidationException("MaskClusterStorage Failed to fetch confluent topics for cluster: "
-          + cluster.getName());
     }
 
     List<EntityAttributes> confluentTopicList = new ArrayList<>();
@@ -206,7 +208,21 @@ public class MaskingUpdateSchedule {
           .map(Entity::getAttributes).filter(Objects::nonNull)
           .toList();
     }
+    if (!confluentTopicList.isEmpty()) {
+      processConfluentTopicMetadataList(cluster, authentication, isMetadataUpdated, confluentTopicList, baseUrl,
+          authUrl);
+    }
 
+    if (!confluentSubjectsList.isEmpty()) {
+      processConfluentSubjectsList(cluster, authentication, isMetadataUpdated, confluentSubjectsList, baseUrl,
+          authUrl);
+    }
+  }
+
+  private void processConfluentTopicMetadataList(KafkaCluster cluster,
+                                                 SchemaRegistryAuth authentication,
+                                                 AtomicBoolean isMetadataUpdated,
+                         List<EntityAttributes> confluentTopicList, String baseUrl, String authUrl) {
     confluentTopicList.forEach(topic -> {
       try {
 
@@ -288,6 +304,94 @@ public class MaskingUpdateSchedule {
 
       } catch (Exception e) {
         log.info("MaskClusterStorage Failed Processing Topic: {}, Message: {}", topic.getName(), e.getMessage());
+      }
+    });
+  }
+
+  private void processConfluentSubjectsList(KafkaCluster cluster,
+                                                 SchemaRegistryAuth authentication,
+                                                 AtomicBoolean isMetadataUpdated,
+                                                 List<String> confluentTopicList, String baseUrl, String authUrl) {
+    confluentTopicList.forEach(topic -> {
+      try {
+
+        log.info("MaskClusterStorage Processing Topic: {} for cluster: {}", topic, cluster.getName());
+          if (cluster.getOriginalProperties().getMasking() == null
+              || cluster.getOriginalProperties().getMasking().isEmpty()) {
+
+            log.info("MaskClusterStorage Fetch Topic: {} Metadata", topic);
+            SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl, authUrl,
+                authentication,
+                topic);
+
+            if (confluentTopicFieldsResponse != null
+                && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+              log.info("MaskClusterStorage Field Mask Topic: {}", topic);
+              updateFieldLevelMasking(cluster, topic,
+                  new ClustersProperties.Masking(),
+                  isMetadataUpdated,
+                  confluentTopicFieldsResponse);
+            } else {
+              log.info("MaskClusterStorage Topic Mask: {}", topic);
+              updateTopicLevelMasking(cluster, topic,
+                  new ClustersProperties.Masking(),
+                  isMetadataUpdated,
+                  confluentTopicFieldsResponse);
+            }
+          } else {
+            log.info("MaskClusterStorage Fetch2 Topic: {} Metadata", topic);
+            SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl, authUrl,
+                authentication,
+                topic);
+
+            if (confluentTopicFieldsResponse != null
+                && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+              log.info("MaskClusterStorage Field2 Mask Topic: {}", topic);
+              List<ClustersProperties.@Valid Masking> fieldMaskList =
+                  cluster.getOriginalProperties().getMasking().stream()
+                      .filter(mask -> mask.getType().equals(
+                          ClustersProperties.Masking.Type.MASK))
+                      .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic))
+                      .toList();
+
+              if (!fieldMaskList.isEmpty()) {
+                fieldMaskList.forEach(mask -> {
+                  updateFieldLevelMasking(cluster, topic, mask, isMetadataUpdated,
+                      confluentTopicFieldsResponse);
+                });
+              } else {
+                updateFieldLevelMasking(cluster, topic,
+                    new ClustersProperties.Masking(),
+                    isMetadataUpdated, confluentTopicFieldsResponse);
+              }
+            } else {
+              log.info("MaskClusterStorage Topic2 Mask: {}", topic);
+              List<ClustersProperties.@Valid Masking> topicMaskList =
+                  cluster.getOriginalProperties().getMasking().stream()
+                      .filter(mask -> mask.getType().equals(
+                          ClustersProperties.Masking.Type.REPLACE))
+                      .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic))
+                      .toList();
+
+              if (!topicMaskList.isEmpty()) {
+                topicMaskList.forEach(mask -> {
+                  updateTopicLevelMasking(cluster, topic, mask,
+                      isMetadataUpdated,
+                      confluentTopicFieldsResponse);
+                });
+              } else {
+                updateTopicLevelMasking(cluster, topic,
+                    new ClustersProperties.Masking(),
+                    isMetadataUpdated,
+                    confluentTopicFieldsResponse);
+              }
+            }
+          }
+
+
+
+      } catch (Exception e) {
+        log.info("MaskClusterStorage Failed Processing Topic: {}, Message: {}", topic, e.getMessage());
       }
     });
   }
@@ -462,6 +566,35 @@ public class MaskingUpdateSchedule {
         metadata = confluentApiClient.retrieveTopicMetadata(URI.create(baseUrl),
             authorization, tag);
       }
+      if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
+        return metadata.getBody();
+      }
+    } catch (FeignException e) {
+      log.error("MaskClusterStorage Feign API call error with message: {}", e.getMessage());
+
+    }
+    return null;
+  }
+
+  @Retryable(
+      retryFor = { FeignException.class },
+      backoff = @Backoff(delay = 2000, multiplier = 2)
+  )
+  private List<String> metadataTopicList(String baseUrl, String authUrl,
+                                                        @MonotonicNonNull SchemaRegistryAuth authentication) {
+    try {
+      log.info("MaskClusterStorage metadataTopicList");
+      String authorization = null;
+      if (authentication != null && authentication.scope() == null) {
+        authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
+            authentication.password());
+      } else {
+        authorization = generateBearerToken(authUrl, authentication.username(), authentication.password(),
+            authentication.scope());
+      }
+      ResponseEntity<List<String>> metadata =  confluentApiClient.retrieveTopicList(URI.create(baseUrl),
+            authorization);
+
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
         return metadata.getBody();
       }

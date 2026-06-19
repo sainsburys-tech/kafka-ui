@@ -31,6 +31,10 @@ public interface ConfluentApiClient {
   ResponseEntity<SchemaMetadataResponse> retrieveTopicMetadata(URI baseUrl,
                                                                @RequestHeader("Authorization") String authorization);
 
+  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.subjects}")
+  ResponseEntity<List<String>> retrieveTopicList(URI baseUrl,
+                                                               @RequestHeader("Authorization") String authorization);
+
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic.fields}")
   ResponseEntity<SchemaMetadataResponse> retrieveTopicFieldsMetadata(URI baseUrl,
                                         @RequestHeader("Authorization") String authorization,
