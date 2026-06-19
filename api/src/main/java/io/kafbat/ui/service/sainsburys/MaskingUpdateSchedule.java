@@ -190,6 +190,9 @@ public class MaskingUpdateSchedule {
       confluentSubjectsList = metadataTopicList(baseUrl, authUrl, authentication);
       log.info("MaskClusterStorage fetch confluent subjects for cluster: {}, baseUrl: {} and topics: {}",
           cluster.getName(), baseUrl, confluentSubjectsList.size());
+      if (confluentSubjectsList == null) {
+        throw new ValidationException("MaskClusterStorage Topics not found for cluster: " + cluster.getName());
+      }
 
     }
 
