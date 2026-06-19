@@ -41,10 +41,6 @@ public class DynamoClusterProperties {
   }
 
   public List<ClustersProperties.Masking> retrieveDynamoMaskingToMaskingList(String cluster) {
-    if (this.maskingEntityList == null) {
-      return new ArrayList<ClustersProperties.Masking>();
-    }
-
     return this.maskingEntityList.stream()
         .filter(mask -> mask.getName().contains(cluster))
         .map(this::mapperDynamoMaskingToMasking)

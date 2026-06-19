@@ -165,6 +165,7 @@ public class MaskingUpdateSchedule {
         log.info("Masking feature not enabled as yet, configure in Application properties.");
       }
     } catch (Exception e) {
+      log.error("MaskClusterStorage Job Failed with message: {}", e.getMessage());
       throw new RuntimeException(e);
     }
     log.info("MaskClusterStorage Masking Job Completed");
