@@ -99,7 +99,7 @@ public class MaskingUpdateSchedule {
     try {
       if (Boolean.valueOf(isMaskingEnabled)) {
         log.info("Update masking tags dynamic config start");
-        log.info("Processing MaskClusterStorage: {}", clustersStorage.getKafkaClusters().isEmpty());
+        log.info("Processing MaskClusterStorage: {}", clustersStorage.getKafkaClusters().size());
 
         AtomicBoolean isMetadataUpdated = new AtomicBoolean(false);
 
@@ -182,9 +182,11 @@ public class MaskingUpdateSchedule {
     SchemaMetadataResponse confluentResponse = metadataTopicResponses(baseUrl, authUrl, authentication, tag);
 
     if (confluentResponse == null) {
-      log.info("MaskClusterStorage Tag metadata API did not return correctly for baseUrl: {} and tag: {}", baseUrl,
-          tag);
-      throw new ValidationException("Failed to fecth confluent topics for cluster: " + cluster.getName());
+      log.info("MaskClusterStorage Tag metadata API did not return correctly for cluster: {}, baseUrl: {} and tag: {}",
+          cluster.getName(), baseUrl, tag);
+
+      throw new ValidationException("MaskClusterStorage Failed to fetch confluent topics for cluster: "
+          + cluster.getName());
     }
 
     List<EntityAttributes> confluentTopicList = new ArrayList<>();
@@ -568,6 +570,7 @@ public class MaskingUpdateSchedule {
   }
 
   public String generateBearerToken(String baseUrl, String clientId, String clientSecret, String scope) {
+    log.info("MaskClusterStorage Generate Bearer Token authUrl: {}, scope: {}", baseUrl, scope);
     if (!baseUrl.endsWith("/token")) {
       baseUrl = baseUrl.endsWith("/") ? baseUrl + "token" : baseUrl + "/token";
     }
@@ -583,12 +586,18 @@ public class MaskingUpdateSchedule {
 
       if (response != null && response.getStatusCode().is2xxSuccessful()
           && response.getBody().containsKey("access_token")) {
+        log.info("MaskClusterStorage Successfully Generated Bearer Token authUrl: {}, scope: {}", baseUrl, scope);
+
         return (String) response.getBody().get("access_token");
       }
+      log.info("MaskClusterStorage Authentication Failed Generate Bearer Token authUrl: {}, scope: {}", baseUrl, scope);
+
       throw new IllegalStateException("MaskClusterStorage Authentication failed: "
           + "'access_token' was missing from response.");
 
     } catch (Exception e) {
+      log.info("MaskClusterStorage Failed To Generate Bearer Token authUrl: {}, scope: {}", baseUrl, scope);
+
       throw new RuntimeException("MaskClusterStorage Failed to pull token against absolute URL target: " + baseUrl, e);
     }
 
