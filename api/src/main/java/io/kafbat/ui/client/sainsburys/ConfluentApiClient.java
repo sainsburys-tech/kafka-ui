@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface ConfluentApiClient {
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.tagdefs}",
-  consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+      consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   ResponseEntity<List<TagDefinitionClassificationResponse>> retrieveTagDefinitions(URI baseUrl,
                                               @RequestHeader("Authorization") String authorization);
 
