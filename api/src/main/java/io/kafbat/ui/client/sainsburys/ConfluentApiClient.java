@@ -7,6 +7,7 @@ import io.kafbat.ui.model.sainsburys.confluent.TagDefinitionClassificationRespon
 import java.net.URI;
 import java.util.List;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,33 +19,40 @@ import org.springframework.web.bind.annotation.RequestParam;
     configuration = { HttpFeignConfig.class })
 public interface ConfluentApiClient {
 
-  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.tagdefs}")
+  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.tagdefs}",
+  consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   ResponseEntity<List<TagDefinitionClassificationResponse>> retrieveTagDefinitions(URI baseUrl,
                                               @RequestHeader("Authorization") String authorization);
 
-  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic}")
+  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic}",
+      consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   ResponseEntity<SchemaMetadataResponse> retrieveTopicMetadata(URI baseUrl,
                                             @RequestHeader("Authorization") String authorization,
                                             @RequestParam("tag") String tag);
 
-  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic}")
+  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic}",
+      consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   ResponseEntity<SchemaMetadataResponse> retrieveTopicMetadata(URI baseUrl,
                                                                @RequestHeader("Authorization") String authorization);
 
-  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.subjects}")
+  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.subjects}",
+      consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   ResponseEntity<List<String>> retrieveTopicList(URI baseUrl,
                                                                @RequestHeader("Authorization") String authorization);
 
-  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic.fields}")
+  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic.fields}",
+      consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   ResponseEntity<SchemaMetadataResponse> retrieveTopicFieldsMetadata(URI baseUrl,
                                         @RequestHeader("Authorization") String authorization,
                                         @RequestParam("tag") String tag);
 
-  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.schema}")
+  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.schema}",
+      consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   ResponseEntity<SchemaMetadataResponse> retrieveSchemaMetadata(URI baseUrl,
                                                                 @RequestHeader("Authorization") String authorization);
 
-  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.subject}")
+  @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.subject}",
+      consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   ResponseEntity<SubjectMetadataResponse> retrieveSubjectMetadata(URI baseUrl,
                                                                   @RequestHeader("Authorization") String authorization,
                                                                   @PathVariable("topic") String subject);
