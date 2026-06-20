@@ -23,7 +23,8 @@ public interface ConfluentApiClient {
         "Accept=*/*"
       })
   ResponseEntity<List<TagDefinitionClassificationResponse>> retrieveTagDefinitions(URI baseUrl,
-                                              @RequestHeader("Authorization") String authorization);
+                                              @RequestHeader("Authorization") String authorization,
+                                              @RequestHeader("Host") String host);
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic}",
       headers = {
@@ -32,7 +33,8 @@ public interface ConfluentApiClient {
       })
   ResponseEntity<SchemaMetadataResponse> retrieveTopicMetadata(URI baseUrl,
                                             @RequestHeader("Authorization") String authorization,
-                                            @RequestParam("tag") String tag);
+                                            @RequestParam("tag") String tag,
+                                            @RequestHeader("Host") String host);
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic}",
       headers = {
@@ -40,7 +42,8 @@ public interface ConfluentApiClient {
         "Accept=*/*"
       })
   ResponseEntity<SchemaMetadataResponse> retrieveTopicMetadata(URI baseUrl,
-                                                               @RequestHeader("Authorization") String authorization);
+                                                               @RequestHeader("Authorization") String authorization,
+                                                               @RequestHeader("Host") String host);
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.subjects}",
       headers = {
@@ -48,7 +51,8 @@ public interface ConfluentApiClient {
         "Accept=*/*"
       })
   ResponseEntity<List<String>> retrieveTopicList(URI baseUrl,
-                                                               @RequestHeader("Authorization") String authorization);
+                                                 @RequestHeader("Authorization") String authorization,
+                                                 @RequestHeader("Host") String host);
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.topic.fields}",
       headers = {
@@ -57,7 +61,8 @@ public interface ConfluentApiClient {
       })
   ResponseEntity<SchemaMetadataResponse> retrieveTopicFieldsMetadata(URI baseUrl,
                                         @RequestHeader("Authorization") String authorization,
-                                        @RequestParam("tag") String tag);
+                                        @RequestParam("tag") String tag,
+                                        @RequestHeader("Host") String host);
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.schema}",
       headers = {
@@ -65,7 +70,8 @@ public interface ConfluentApiClient {
         "Accept=*/*"
       })
   ResponseEntity<SchemaMetadataResponse> retrieveSchemaMetadata(URI baseUrl,
-                                                                @RequestHeader("Authorization") String authorization);
+                                                                @RequestHeader("Authorization") String authorization,
+                                                                @RequestHeader("Host") String host);
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.subject}",
       headers = {
@@ -74,5 +80,6 @@ public interface ConfluentApiClient {
       })
   ResponseEntity<SubjectMetadataResponse> retrieveSubjectMetadata(URI baseUrl,
                                                                   @RequestHeader("Authorization") String authorization,
-                                                                  @PathVariable("topic") String subject);
+                                                                  @PathVariable("topic") String subject,
+                                                                  @RequestHeader("Host") String host);
 }

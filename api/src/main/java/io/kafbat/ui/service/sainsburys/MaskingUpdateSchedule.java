@@ -528,7 +528,8 @@ public class MaskingUpdateSchedule {
         }
 
         ResponseEntity<List<TagDefinitionClassificationResponse>> tagDefinitions =
-            confluentApiClient.retrieveTagDefinitions(URI.create(baseUrl), authorization);
+            confluentApiClient.retrieveTagDefinitions(URI.create(baseUrl), authorization,
+                URI.create(baseUrl).getHost());
 
         if (tagDefinitions != null && tagDefinitions.getStatusCode().is2xxSuccessful()) {
           return tagDefinitions.getBody();
@@ -561,10 +562,10 @@ public class MaskingUpdateSchedule {
 
       if (tag == null) {
         metadata = confluentApiClient.retrieveTopicMetadata(URI.create(baseUrl),
-            authorization);
+            authorization, URI.create(baseUrl).getHost());
       } else {
         metadata = confluentApiClient.retrieveTopicMetadata(URI.create(baseUrl),
-            authorization, tag);
+            authorization, tag, URI.create(baseUrl).getHost());
       }
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
         return metadata.getBody();
@@ -593,7 +594,7 @@ public class MaskingUpdateSchedule {
             authentication.scope());
       }
       ResponseEntity<List<String>> metadata =  confluentApiClient.retrieveTopicList(URI.create(baseUrl),
-            authorization);
+            authorization, URI.create(baseUrl).getHost());
 
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
         return metadata.getBody();
@@ -623,7 +624,8 @@ public class MaskingUpdateSchedule {
             authentication.scope());
       }
       ResponseEntity<SubjectMetadataResponse> metadata =
-          confluentApiClient.retrieveSubjectMetadata(URI.create(baseUrl), authorization, topic);
+          confluentApiClient.retrieveSubjectMetadata(URI.create(baseUrl), authorization, topic,
+              URI.create(baseUrl).getHost());
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
         return metadata.getBody();
       }
