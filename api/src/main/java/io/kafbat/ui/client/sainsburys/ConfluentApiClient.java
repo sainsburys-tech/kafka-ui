@@ -22,7 +22,7 @@ public interface ConfluentApiClient {
       headers = {
         "Content-Type=application/vnd.schemaregistry.v1+json",
         "Accept=application/vnd.schemaregistry.v1+json"
-    })
+      })
   ResponseEntity<List<TagDefinitionClassificationResponse>> retrieveTagDefinitions(URI baseUrl,
                                               @RequestHeader("Authorization") String authorization);
 
@@ -30,7 +30,7 @@ public interface ConfluentApiClient {
       headers = {
         "Content-Type=application/vnd.schemaregistry.v1+json",
         "Accept=application/vnd.schemaregistry.v1+json"
-    })
+      })
   ResponseEntity<SchemaMetadataResponse> retrieveTopicMetadata(URI baseUrl,
                                             @RequestHeader("Authorization") String authorization,
                                             @RequestParam("tag") String tag);
@@ -39,7 +39,7 @@ public interface ConfluentApiClient {
       headers = {
         "Content-Type=application/vnd.schemaregistry.v1+json",
         "Accept=application/vnd.schemaregistry.v1+json"
-    })
+      })
   ResponseEntity<SchemaMetadataResponse> retrieveTopicMetadata(URI baseUrl,
                                                                @RequestHeader("Authorization") String authorization);
 
@@ -47,7 +47,7 @@ public interface ConfluentApiClient {
       headers = {
         "Content-Type=application/vnd.schemaregistry.v1+json",
         "Accept=application/vnd.schemaregistry.v1+json"
-    })
+      })
   ResponseEntity<List<String>> retrieveTopicList(URI baseUrl,
                                                                @RequestHeader("Authorization") String authorization);
 
@@ -55,7 +55,7 @@ public interface ConfluentApiClient {
       headers = {
         "Content-Type=application/vnd.schemaregistry.v1+json",
         "Accept=application/vnd.schemaregistry.v1+json"
-    })
+      })
   ResponseEntity<SchemaMetadataResponse> retrieveTopicFieldsMetadata(URI baseUrl,
                                         @RequestHeader("Authorization") String authorization,
                                         @RequestParam("tag") String tag);
@@ -64,7 +64,7 @@ public interface ConfluentApiClient {
       headers = {
         "Content-Type=application/vnd.schemaregistry.v1+json",
         "Accept=application/vnd.schemaregistry.v1+json"
-    })
+      })
   ResponseEntity<SchemaMetadataResponse> retrieveSchemaMetadata(URI baseUrl,
                                                                 @RequestHeader("Authorization") String authorization);
 
@@ -72,7 +72,7 @@ public interface ConfluentApiClient {
       headers = {
         "Content-Type=application/vnd.schemaregistry.v1+json",
         "Accept=application/vnd.schemaregistry.v1+json"
-    })
+      })
   ResponseEntity<SubjectMetadataResponse> retrieveSubjectMetadata(URI baseUrl,
                                                                   @RequestHeader("Authorization") String authorization,
                                                                   @PathVariable("topic") String subject);
