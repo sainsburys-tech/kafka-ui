@@ -602,6 +602,7 @@ public class MaskingUpdateSchedule {
         return metadata.getBody();
       }
     } catch (FeignException e) {
+      log.error("MaskClusterStorage Feign API Status: {}, Body: {}", e.status(), e.contentUTF8());
       log.error("MaskClusterStorage Feign API call error with message: {}", e.getMessage());
 
     }
