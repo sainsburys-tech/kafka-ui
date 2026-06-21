@@ -596,6 +596,8 @@ public class MaskingUpdateSchedule {
       ResponseEntity<List<String>> metadata =  confluentApiClient.retrieveTopicList(URI.create(baseUrl),
             authorization, URI.create(baseUrl).getHost());
 
+      log.info("MaskClusterStorage confluent topic response: {}, body: {}",
+          metadata, metadata != null ? metadata.getBody() : null);
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
         return metadata.getBody();
       }
