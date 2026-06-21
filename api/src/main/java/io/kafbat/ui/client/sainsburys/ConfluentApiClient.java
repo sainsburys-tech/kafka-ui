@@ -12,7 +12,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "confluent-api-client")
+@FeignClient(name = "confluent-api-client",
+    url = "${sainsburys.external.services.confluent-api.base-url}")
 public interface ConfluentApiClient {
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.tagdefs}",
