@@ -1,6 +1,5 @@
 package io.kafbat.ui.client.sainsburys;
 
-import io.kafbat.ui.config.sainsburys.HttpFeignConfig;
 import io.kafbat.ui.model.sainsburys.confluent.SchemaMetadataResponse;
 import io.kafbat.ui.model.sainsburys.confluent.SubjectMetadataResponse;
 import io.kafbat.ui.model.sainsburys.confluent.TagDefinitionClassificationResponse;
@@ -13,8 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "confluent-api-client",
-    configuration = { HttpFeignConfig.class })
+@FeignClient(name = "confluent-api-client")
 public interface ConfluentApiClient {
 
   @GetMapping(path = "${sainsburys.external.services.confluent-api.operations.retrieve.tagdefs}",
