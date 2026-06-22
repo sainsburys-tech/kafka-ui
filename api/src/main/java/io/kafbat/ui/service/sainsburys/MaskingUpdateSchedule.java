@@ -183,6 +183,7 @@ public class MaskingUpdateSchedule {
     log.info("MaskClusterStorage Fetch Topics for cluster: {}", cluster.getName());
     SchemaMetadataResponse confluentResponse = metadataTopicResponses(baseUrl, authUrl, authentication, tag);
     List<String> confluentSubjectsList = new ArrayList<>();
+    List<EntityAttributes> confluentTopicList = new ArrayList<>();
 
     if (confluentResponse == null) {
       log.info("MaskClusterStorage Failed to fetch confluent topics for cluster: {}, baseUrl: {} and tag: {}",
@@ -194,23 +195,22 @@ public class MaskingUpdateSchedule {
         throw new ValidationException("MaskClusterStorage Topics not found for cluster: " + cluster.getName());
       }
 
-    }
-
-    List<EntityAttributes> confluentTopicList = new ArrayList<>();
-
-    if (tag == null) {
-      log.info("MaskClusterStorage Processing No Tag Topics for cluster: {}", cluster.getName());
-      confluentTopicList = confluentResponse.getEntities().stream()
-          .filter(Predicate.not(e -> e.getClassificationNames().contains(defaultNonPiiTag)))
-          .map(Entity::getAttributes).filter(Objects::nonNull)
-          .toList();
     } else {
-      log.info("MaskClusterStorage Processing Tag: {} Topics for cluster: {}", tag, cluster.getName());
-      confluentTopicList = confluentResponse.getEntities().stream()
-          .filter(e -> e.getClassificationNames().contains(tag))
-          .map(Entity::getAttributes).filter(Objects::nonNull)
-          .toList();
+      if (tag == null) {
+        log.info("MaskClusterStorage Processing No Tag Topics for cluster: {}", cluster.getName());
+        confluentTopicList = confluentResponse.getEntities().stream()
+            .filter(Predicate.not(e -> e.getClassificationNames().contains(defaultNonPiiTag)))
+            .map(Entity::getAttributes).filter(Objects::nonNull)
+            .toList();
+      } else {
+        log.info("MaskClusterStorage Processing Tag: {} Topics for cluster: {}", tag, cluster.getName());
+        confluentTopicList = confluentResponse.getEntities().stream()
+            .filter(e -> e.getClassificationNames().contains(tag))
+            .map(Entity::getAttributes).filter(Objects::nonNull)
+            .toList();
+      }
     }
+
     if (!confluentTopicList.isEmpty()) {
       processConfluentTopicMetadataList(cluster, authentication, isMetadataUpdated, confluentTopicList, baseUrl,
           authUrl);
