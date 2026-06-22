@@ -445,12 +445,13 @@ public class MaskingUpdateSchedule {
           isMetadataUpdated.set(true);
         });
       }
-      if (cluster.getOriginalProperties().getMasking() != null
-          && !cluster.getOriginalProperties().getMasking().contains(mask)) {
-        log.info("MaskClusterStorage completed and saving cluster: {}",
-            cluster.getName());
-        saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
-      }
+
+      log.info("MaskClusterStorage confluent fields to remove null: {}, and list: {}",
+          fieldsToRemove == null, fieldsToRemove);
+
+      log.info("MaskClusterStorage completed and saving cluster: {}",
+          cluster.getName());
+      saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
 
     }
   }
