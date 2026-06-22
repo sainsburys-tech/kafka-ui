@@ -496,6 +496,7 @@ public class MaskingUpdateSchedule {
           .flatMapMany(reactiveAdminClient -> reactiveAdminClient.listTopics(false))
           .flatMapIterable(topicSet -> topicSet)
           .map(topicName -> {
+            log.info("MaskClusterStorage maskAllByDefault for cluster: {}, topic: {}", cluster.getName(), topicName);
             ClustersProperties.Masking mask = new ClustersProperties.Masking();
             mask.setType(ClustersProperties.Masking.Type.REPLACE);
             mask.setReplacement(defaultMaskingTopicReplacement);
