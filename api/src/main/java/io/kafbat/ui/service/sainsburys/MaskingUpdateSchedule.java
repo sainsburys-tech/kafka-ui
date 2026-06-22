@@ -428,6 +428,9 @@ public class MaskingUpdateSchedule {
 
       List<String> fieldsToMask = mask.getFields().isEmpty() ? confluentTopicFieldsList : fieldsToMask(mask.getFields(),
           confluentTopicFieldsList);
+      log.info("MaskClusterStorage confluent fields to mask null: {}, and list: {}",
+          fieldsToMask == null, fieldsToMask);
+
       if (!fieldsToMask.isEmpty()) {
         fieldsToMask.stream().forEach(field -> {
           mask.getFields().add(field);
@@ -444,7 +447,8 @@ public class MaskingUpdateSchedule {
       }
       if (cluster.getOriginalProperties().getMasking() != null
           && !cluster.getOriginalProperties().getMasking().contains(mask)) {
-        cluster.getOriginalProperties().getMasking().add(mask);
+        log.info("MaskClusterStorage completed and saving cluster: {}",
+            cluster.getName());
         saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
       }
 
