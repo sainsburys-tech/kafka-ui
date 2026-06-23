@@ -648,7 +648,7 @@ public class MaskingUpdateSchedule {
       }
       ResponseEntity<SubjectMetadataResponse> metadata =
           confluentApiClient.retrieveSubjectMetadata(URI.create(baseUrl),
-              isConfluentEnabled.get() ? authorization: null,
+              isConfluentEnabled.get() ? authorization : null,
               topic,
               URI.create(baseUrl).getHost());
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
