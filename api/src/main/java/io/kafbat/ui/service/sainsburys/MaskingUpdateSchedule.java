@@ -452,11 +452,8 @@ public class MaskingUpdateSchedule {
           .map(String::toLowerCase)
           .toList();
 
-      if (mask.getFields() == null) {
-        mask.setFields(new ArrayList<String>());
-      }
-
-      List<String> fieldsToMask = mask.getFields().isEmpty() ? confluentTopicFieldsList : fieldsToMask(mask.getFields(),
+      List<String> fieldsToMask = mask.getFields() == null || mask.getFields().isEmpty() ?
+          confluentTopicFieldsList : fieldsToMask(mask.getFields(),
           confluentTopicFieldsList);
       log.info("MaskClusterStorage confluent fields to mask null: {}, and list: {}",
           fieldsToMask == null, fieldsToMask);
@@ -467,7 +464,7 @@ public class MaskingUpdateSchedule {
           isMetadataUpdated.set(true);
         });
       }
-      List<String> fieldsToRemove = mask.getFields().isEmpty() ? mask.getFields() :
+      List<String> fieldsToRemove = mask.getFields() == null || mask.getFields().isEmpty() ? mask.getFields() :
           fieldsToRemoveFromMask(mask.getFields(), confluentTopicFieldsList);
       if (!fieldsToRemove.isEmpty()) {
         fieldsToRemove.stream().forEach(field -> {
@@ -689,7 +686,7 @@ public class MaskingUpdateSchedule {
     try {
       log.info("MaskClusterStorage saveMaskingEntity");
       dynamoMaskingEntityRepository.save(mask);
-      log.info("MaskClusterStorage Dynamo Mask saved successfully. {}", mask.getName());
+      log.info("MaskClusterStorage Dynamo Mask saved successfully. {}, fields: {}", mask.getName(), mask.getFields());
     } catch (Exception e) {
       log.error("MaskClusterStorage Dynamo Masking config: {} failed with message: {}", mask.getName(),
           e.getMessage());
