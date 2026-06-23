@@ -531,7 +531,7 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private List<TagDefinitionClassificationResponse> tagDefinitionResponse(String baseUrl, String authUrl,
-                                                                          @MonotonicNonNull SchemaRegistryAuth authentication) {
+                                                      @MonotonicNonNull SchemaRegistryAuth authentication) {
     try {
       log.info("MaskClusterStorage tagDefinitionResponse");
       if (baseUrl != null && authentication != null) {
