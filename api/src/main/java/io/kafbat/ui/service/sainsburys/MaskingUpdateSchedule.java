@@ -452,6 +452,10 @@ public class MaskingUpdateSchedule {
           .map(String::toLowerCase)
           .toList();
 
+      if (mask.getFields() == null) {
+        mask.setFields(new ArrayList<String>());
+      }
+
       List<String> fieldsToMask = mask.getFields().isEmpty() ? confluentTopicFieldsList : fieldsToMask(mask.getFields(),
           confluentTopicFieldsList);
       log.info("MaskClusterStorage confluent fields to mask null: {}, and list: {}",
@@ -486,6 +490,9 @@ public class MaskingUpdateSchedule {
                                        ClustersProperties.@Valid @MonotonicNonNull Masking mask,
                                        AtomicBoolean isMetadataUpdated,
                                        SubjectMetadataResponse confluentTopicFieldsResponse) {
+    if (mask.getFields() == null) {
+      mask.setFields(new ArrayList<String>());
+    }
     List<String> currentFields = mask.getFields();
     log.info("MaskClusterStorage Field Level Masking for topic name: {}", topic);
     ConfluentAvroSchema confluentAvroSchema = avroSchemaMapper(confluentTopicFieldsResponse.getSchema());
