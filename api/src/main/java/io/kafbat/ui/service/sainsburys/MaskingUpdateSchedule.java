@@ -225,6 +225,7 @@ public class MaskingUpdateSchedule {
     }
 
     if (!confluentSubjectsList.isEmpty()) {
+      isConfluentEnabled.set(false);
       processConfluentSubjectsList(cluster, authentication, isMetadataUpdated, confluentSubjectsList, baseUrl,
           authUrl, isConfluentEnabled);
     }
@@ -422,7 +423,8 @@ public class MaskingUpdateSchedule {
 
           return Mono.empty();
         })
-        .then();
+        .then()
+        .subscribe();
   }
 
   private void updateTopicLevelMasking(KafkaCluster cluster, String topic,
