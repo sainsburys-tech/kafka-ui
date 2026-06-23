@@ -5,7 +5,6 @@ import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputExceededExce
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
-import io.kafbat.ui.api.model.Topic;
 import io.kafbat.ui.client.sainsburys.AzureEntraAuthClient;
 import io.kafbat.ui.client.sainsburys.ConfluentApiClient;
 import io.kafbat.ui.config.ClustersProperties;
@@ -44,6 +43,7 @@ import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -127,7 +127,7 @@ public class MaskingUpdateSchedule {
                   try {
 
                     log.info("MaskClusterStorage maskProcessor: {}", Boolean.valueOf(maskAllByDefault));
-                    maskAllByDefault(cluster, isMetadataUpdated);
+                    maskProcessor(cluster, clusterAuth, null, isMetadataUpdated);
                   } catch (Exception e) {
                     log.error("MaskClusterStorage Failed maskProcessor cluster masking {} message: {}",
                         cluster.getName(), e.getMessage());
@@ -187,11 +187,19 @@ public class MaskingUpdateSchedule {
 
     log.info("MaskClusterStorage Fetch Topics for cluster: {}", cluster.getName());
     SchemaMetadataResponse confluentResponse = metadataTopicResponses(baseUrl, authUrl, authentication, tag);
+    List<String> confluentSubjectsList = new ArrayList<>();
     List<EntityAttributes> confluentTopicList = new ArrayList<>();
 
     if (confluentResponse == null) {
       log.info("MaskClusterStorage Failed to fetch confluent topics for cluster: {}, baseUrl: {} and tag: {}",
           cluster.getName(), baseUrl, tag);
+      confluentSubjectsList = metadataTopicList(baseUrl, authUrl, authentication);
+      log.info("MaskClusterStorage fetch confluent subjects for cluster: {}, baseUrl: {} and topics null: {}",
+          cluster.getName(), baseUrl, confluentSubjectsList == null);
+      if (confluentSubjectsList == null) {
+        throw new ValidationException("MaskClusterStorage Topics not found for cluster: " + cluster.getName());
+      }
+
     } else {
       if (tag == null) {
         log.info("MaskClusterStorage Processing No Tag Topics for cluster: {}", cluster.getName());
@@ -212,12 +220,18 @@ public class MaskingUpdateSchedule {
       processConfluentTopicMetadataList(cluster, authentication, isMetadataUpdated, confluentTopicList, baseUrl,
           authUrl);
     }
+
+    if (!confluentSubjectsList.isEmpty()) {
+      processConfluentSubjectsList(cluster, authentication, isMetadataUpdated, confluentSubjectsList, baseUrl,
+          authUrl);
+    }
   }
 
   private void processConfluentTopicMetadataList(KafkaCluster cluster,
                                                  SchemaRegistryAuth authentication,
                                                  AtomicBoolean isMetadataUpdated,
-                         List<EntityAttributes> confluentTopicList, String baseUrl, String authUrl) {
+                                                 List<EntityAttributes> confluentTopicList, String baseUrl,
+                                                 String authUrl) {
     confluentTopicList.forEach(topic -> {
       try {
 
@@ -303,6 +317,102 @@ public class MaskingUpdateSchedule {
     });
   }
 
+  private void processConfluentSubjectsList(KafkaCluster cluster,
+                                            SchemaRegistryAuth authentication,
+                                            AtomicBoolean isMetadataUpdated,
+                                            List<String> confluentSubjectList, String baseUrl, String authUrl) {
+    adminClientService.get(cluster)
+        .flatMapMany(reactiveAdminClient -> reactiveAdminClient.listTopics(false))
+        .flatMapIterable(topicSet -> topicSet)
+        .map(topic -> {
+          confluentSubjectList.stream().filter(s -> s.contains(topic))
+              .forEach(subject -> {
+            try {
+
+              log.info("MaskClusterStorage Processing Topic: {} for cluster: {}", topic, cluster.getName());
+              if (cluster.getOriginalProperties().getMasking() == null
+                  || cluster.getOriginalProperties().getMasking().isEmpty()) {
+
+                log.info("MaskClusterStorage Fetch Topic: {} Metadata", topic);
+                SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
+                    authUrl,
+                    authentication,
+                    subject);
+
+                if (confluentTopicFieldsResponse != null
+                    && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+                  log.info("MaskClusterStorage Field Mask Topic: {}", topic);
+                  updateFieldLevelMasking(cluster, topic,
+                      new ClustersProperties.Masking(),
+                      isMetadataUpdated,
+                      confluentTopicFieldsResponse);
+                } else {
+                  log.info("MaskClusterStorage Topic Level Mask: {}, Subject: {}", topic, subject);
+                  updateTopicLevelMasking(cluster, topic,
+                      new ClustersProperties.Masking(),
+                      isMetadataUpdated,
+                      confluentTopicFieldsResponse);
+                }
+              } else {
+                log.info("MaskClusterStorage Fetch2 Topic: {} Metadata", topic);
+                SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
+                    authUrl,
+                    authentication,
+                    topic);
+
+                if (confluentTopicFieldsResponse != null
+                    && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+                  log.info("MaskClusterStorage Field2 Mask Topic: {}", topic);
+                  List<ClustersProperties.@Valid Masking> fieldMaskList =
+                      cluster.getOriginalProperties().getMasking().stream()
+                          .filter(mask -> mask.getType().equals(
+                              ClustersProperties.Masking.Type.MASK))
+                          .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic))
+                          .toList();
+
+                  if (!fieldMaskList.isEmpty()) {
+                    fieldMaskList.forEach(mask -> {
+                      updateFieldLevelMasking(cluster, topic, mask, isMetadataUpdated,
+                          confluentTopicFieldsResponse);
+                    });
+                  } else {
+                    updateFieldLevelMasking(cluster, topic,
+                        new ClustersProperties.Masking(),
+                        isMetadataUpdated, confluentTopicFieldsResponse);
+                  }
+                } else {
+                  log.info("MaskClusterStorage Topic2 Mask: {}", topic);
+                  List<ClustersProperties.@Valid Masking> topicMaskList =
+                      cluster.getOriginalProperties().getMasking().stream()
+                          .filter(mask -> mask.getType().equals(
+                              ClustersProperties.Masking.Type.REPLACE))
+                          .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic))
+                          .toList();
+
+                  if (!topicMaskList.isEmpty()) {
+                    topicMaskList.forEach(mask -> {
+                      updateTopicLevelMasking(cluster, topic, mask,
+                          isMetadataUpdated,
+                          confluentTopicFieldsResponse);
+                    });
+                  } else {
+                    updateTopicLevelMasking(cluster, topic,
+                        new ClustersProperties.Masking(),
+                        isMetadataUpdated,
+                        confluentTopicFieldsResponse);
+                  }
+                }
+              }
+            } catch (Exception e) {
+              log.info("MaskClusterStorage Failed Processing Topic: {}, Message: {}", topic, e.getMessage());
+            }
+          });
+
+          return Mono.empty();
+        })
+        .then();
+  }
+
   private void updateTopicLevelMasking(KafkaCluster cluster, String topic,
                                        ClustersProperties.@Valid Masking mask,
                                        AtomicBoolean isMetadataUpdated,
@@ -310,11 +420,6 @@ public class MaskingUpdateSchedule {
     log.info("MaskClusterStorage Topic Level Masking for topic name: {}", topic);
     if (confluentTopicFieldsResponse == null) {
       log.error("MaskClusterStorage Topic schema not found");
-      mask.setType(ClustersProperties.Masking.Type.REPLACE);
-      mask.setReplacement(defaultMaskingTopicReplacement);
-      mask.setTopicValuesPattern(topic);
-      isMetadataUpdated.set(true);
-      saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
       throw new ValidationException("MaskClusterStorage Topic schema not found for topic: " + topic);
     }
     ConfluentAvroSchema confluentAvroSchema = avroSchemaMapper(confluentTopicFieldsResponse.getSchema());
@@ -426,7 +531,7 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private List<TagDefinitionClassificationResponse> tagDefinitionResponse(String baseUrl, String authUrl,
-                @MonotonicNonNull SchemaRegistryAuth authentication) {
+                                                                          @MonotonicNonNull SchemaRegistryAuth authentication) {
     try {
       log.info("MaskClusterStorage tagDefinitionResponse");
       if (baseUrl != null && authentication != null) {
@@ -458,8 +563,8 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private SchemaMetadataResponse metadataTopicResponses(String baseUrl, String authUrl,
-                            @MonotonicNonNull SchemaRegistryAuth authentication,
-                            String tag) {
+                                                        @MonotonicNonNull SchemaRegistryAuth authentication,
+                                                        String tag) {
     try {
       log.info("MaskClusterStorage metadataTopicResponses");
       String authorization = null;
@@ -489,27 +594,36 @@ public class MaskingUpdateSchedule {
     return null;
   }
 
-
-  private void maskAllByDefault(KafkaCluster cluster, AtomicBoolean isMetadataUpdated) {
+  @Retryable(
+      retryFor = { FeignException.class },
+      backoff = @Backoff(delay = 2000, multiplier = 2)
+  )
+  private List<String> metadataTopicList(String baseUrl, String authUrl,
+                                         @MonotonicNonNull SchemaRegistryAuth authentication) {
     try {
-      adminClientService.get(cluster)
-          .flatMapMany(reactiveAdminClient -> reactiveAdminClient.listTopics(false))
-          .flatMapIterable(topicSet -> topicSet)
-          .map(topicName -> {
-            log.info("MaskClusterStorage maskAllByDefault for cluster: {}, topic: {}", cluster.getName(), topicName);
-            ClustersProperties.Masking mask = new ClustersProperties.Masking();
-            mask.setType(ClustersProperties.Masking.Type.REPLACE);
-            mask.setReplacement(defaultMaskingTopicReplacement);
-            mask.setTopicValuesPattern(topicName);
-            isMetadataUpdated.set(true);
-            saveMaskingEntity(mapperMaskingDtoToEntity(cluster.getName(), mask));
-            return mask;
-          })
-          .then();
-    } catch (Exception e) {
+      log.info("MaskClusterStorage metadataTopicList");
+      String authorization = null;
+      if (authentication != null && authentication.scope() == null) {
+        authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
+            authentication.password());
+      } else {
+        authorization = generateBearerToken(authUrl, authentication.username(), authentication.password(),
+            authentication.scope());
+      }
+      ResponseEntity<List<String>> metadata =  confluentApiClient.retrieveTopicList(URI.create(baseUrl),
+          null, URI.create(baseUrl).getHost());
+
+      log.info("MaskClusterStorage confluent topic response: {}, body: {}",
+          metadata, metadata != null ? metadata.getBody() : null);
+      if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
+        return metadata.getBody();
+      }
+    } catch (FeignException e) {
+      log.error("MaskClusterStorage Feign API Status: {}, Body: {}", e.status(), e.contentUTF8());
       log.error("MaskClusterStorage Feign API call error with message: {}", e.getMessage());
 
     }
+    return null;
   }
 
   @Retryable(
@@ -517,8 +631,8 @@ public class MaskingUpdateSchedule {
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
   private SubjectMetadataResponse retrieveSubjectMetadataResponses(String baseUrl, String authUrl,
-                                @MonotonicNonNull SchemaRegistryAuth authentication,
-                                String topic) {
+                                                                   @MonotonicNonNull SchemaRegistryAuth authentication,
+                                                                   String topic) {
     try {
       log.info("MaskClusterStorage retrieveSubjectMetadataResponses");
       String authorization = null;
