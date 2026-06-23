@@ -106,6 +106,7 @@ public class MaskingUpdateSchedule {
         log.info("Started MaskClusterStorage: {}", clustersStorage.getKafkaClusters().size());
 
         AtomicBoolean isMetadataUpdated = new AtomicBoolean(false);
+        AtomicBoolean isConfluentEnabled = new AtomicBoolean(false);
 
         clustersStorage.getKafkaClusters()
             .forEach(cluster -> {
@@ -127,7 +128,7 @@ public class MaskingUpdateSchedule {
                   try {
 
                     log.info("MaskClusterStorage maskProcessor: {}", Boolean.valueOf(maskAllByDefault));
-                    maskProcessor(cluster, clusterAuth, null, isMetadataUpdated);
+                    maskProcessor(cluster, clusterAuth, null, isMetadataUpdated, isConfluentEnabled);
                   } catch (Exception e) {
                     log.error("MaskClusterStorage Failed maskProcessor cluster masking {} message: {}",
                         cluster.getName(), e.getMessage());
@@ -142,12 +143,13 @@ public class MaskingUpdateSchedule {
 
                   if (tagDefinitionList != null && !tagDefinitionList.isEmpty()) {
                     log.info("MaskClusterStorage processing tagDefinitionList");
+                    isConfluentEnabled.set(true);
                     tagDefinitionList.stream().map(TagDefinitionClassificationResponse::getName)
                         .forEach(tag -> {
                           log.info("MaskClusterStorage Tag found for cluster: {}, tag: {}", cluster.getName(), tag);
                           try {
                             log.info("MaskClusterStorage maskProcessor: {}", Boolean.valueOf(maskAllByDefault));
-                            maskProcessor(cluster, clusterAuth, tag, isMetadataUpdated);
+                            maskProcessor(cluster, clusterAuth, tag, isMetadataUpdated, isConfluentEnabled);
                           } catch (Exception e) {
                             log.error("MaskClusterStorage Failed maskProcessor cluster masking {} message: {}",
                                 cluster.getName(),
@@ -180,7 +182,7 @@ public class MaskingUpdateSchedule {
   private void maskProcessor(KafkaCluster cluster,
                              SchemaRegistryAuth authentication,
                              String tag,
-                             AtomicBoolean isMetadataUpdated) {
+                             AtomicBoolean isMetadataUpdated, AtomicBoolean isConfluentEnabled) {
     String baseUrl = cluster.getOriginalProperties().getSchemaRegistry();
     String authUrl = cluster.getProperties() != null
         ? cluster.getProperties().getProperty("sasl.oauthbearer.token.endpoint.url") : null;
@@ -193,7 +195,7 @@ public class MaskingUpdateSchedule {
     if (confluentResponse == null) {
       log.info("MaskClusterStorage Failed to fetch confluent topics for cluster: {}, baseUrl: {} and tag: {}",
           cluster.getName(), baseUrl, tag);
-      confluentSubjectsList = metadataTopicList(baseUrl, authUrl, authentication);
+      confluentSubjectsList = metadataTopicList(baseUrl);
       log.info("MaskClusterStorage fetch confluent subjects for cluster: {}, baseUrl: {} and topics null: {}",
           cluster.getName(), baseUrl, confluentSubjectsList == null);
       if (confluentSubjectsList == null) {
@@ -217,13 +219,14 @@ public class MaskingUpdateSchedule {
     }
 
     if (!confluentTopicList.isEmpty()) {
+      isConfluentEnabled.set(true);
       processConfluentTopicMetadataList(cluster, authentication, isMetadataUpdated, confluentTopicList, baseUrl,
-          authUrl);
+          authUrl, isConfluentEnabled);
     }
 
     if (!confluentSubjectsList.isEmpty()) {
       processConfluentSubjectsList(cluster, authentication, isMetadataUpdated, confluentSubjectsList, baseUrl,
-          authUrl);
+          authUrl, isConfluentEnabled);
     }
   }
 
@@ -231,7 +234,7 @@ public class MaskingUpdateSchedule {
                                                  SchemaRegistryAuth authentication,
                                                  AtomicBoolean isMetadataUpdated,
                                                  List<EntityAttributes> confluentTopicList, String baseUrl,
-                                                 String authUrl) {
+                                                 String authUrl, AtomicBoolean isConfluentEnabled) {
     confluentTopicList.forEach(topic -> {
       try {
 
@@ -243,7 +246,8 @@ public class MaskingUpdateSchedule {
             log.info("MaskClusterStorage Fetch Topic: {} Metadata", topic.getName());
             SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl, authUrl,
                 authentication,
-                topic.getName());
+                topic.getName(),
+                isConfluentEnabled);
 
             if (confluentTopicFieldsResponse != null
                 && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
@@ -263,7 +267,8 @@ public class MaskingUpdateSchedule {
             log.info("MaskClusterStorage Fetch2 Topic: {} Metadata", topic.getName());
             SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl, authUrl,
                 authentication,
-                topic.getName());
+                topic.getName(),
+                isConfluentEnabled);
 
             if (confluentTopicFieldsResponse != null
                 && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
@@ -320,11 +325,15 @@ public class MaskingUpdateSchedule {
   private void processConfluentSubjectsList(KafkaCluster cluster,
                                             SchemaRegistryAuth authentication,
                                             AtomicBoolean isMetadataUpdated,
-                                            List<String> confluentSubjectList, String baseUrl, String authUrl) {
+                                            List<String> confluentSubjectList, String baseUrl,
+                                            String authUrl, AtomicBoolean isConfluentEnabled) {
+    log.info("MaskClusterStorage Starting processConfluentSubjectsList for cluster: {}", cluster.getName());
     adminClientService.get(cluster)
         .flatMapMany(reactiveAdminClient -> reactiveAdminClient.listTopics(false))
         .flatMapIterable(topicSet -> topicSet)
         .map(topic -> {
+          log.info("MaskClusterStorage Starting Processing Topic: {} for cluster: {}", topic, cluster.getName());
+
           confluentSubjectList.stream().filter(s -> s.contains(topic))
               .forEach(subject -> {
                 try {
@@ -333,12 +342,14 @@ public class MaskingUpdateSchedule {
                   if (cluster.getOriginalProperties().getMasking() == null
                       || cluster.getOriginalProperties().getMasking().isEmpty()) {
 
-                    log.info("MaskClusterStorage Fetch Topic: {} Metadata", topic);
                     SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
                         authUrl,
                         authentication,
-                        subject);
+                        subject,
+                        isConfluentEnabled);
 
+                    log.info("MaskClusterStorage Fetch Metadata: {}",
+                        confluentTopicFieldsResponse != null ? confluentTopicFieldsResponse.getSchema() : null);
                     if (confluentTopicFieldsResponse != null
                         && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
                       log.info("MaskClusterStorage Field Mask Topic: {}", topic);
@@ -358,7 +369,8 @@ public class MaskingUpdateSchedule {
                     SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
                         authUrl,
                         authentication,
-                        topic);
+                        topic,
+                        isConfluentEnabled);
 
                     if (confluentTopicFieldsResponse != null
                         && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
@@ -598,18 +610,9 @@ public class MaskingUpdateSchedule {
       retryFor = { FeignException.class },
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
-  private List<String> metadataTopicList(String baseUrl, String authUrl,
-                                         @MonotonicNonNull SchemaRegistryAuth authentication) {
+  private List<String> metadataTopicList(String baseUrl) {
     try {
       log.info("MaskClusterStorage metadataTopicList");
-      String authorization = null;
-      if (authentication != null && authentication.scope() == null) {
-        authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
-            authentication.password());
-      } else {
-        authorization = generateBearerToken(authUrl, authentication.username(), authentication.password(),
-            authentication.scope());
-      }
       ResponseEntity<List<String>> metadata =  confluentApiClient.retrieveTopicList(URI.create(baseUrl),
           null, URI.create(baseUrl).getHost());
 
@@ -632,7 +635,7 @@ public class MaskingUpdateSchedule {
   )
   private SubjectMetadataResponse retrieveSubjectMetadataResponses(String baseUrl, String authUrl,
                                                                    @MonotonicNonNull SchemaRegistryAuth authentication,
-                                                                   String topic) {
+                                                                   String topic, AtomicBoolean isConfluentEnabled) {
     try {
       log.info("MaskClusterStorage retrieveSubjectMetadataResponses");
       String authorization = null;
@@ -644,7 +647,9 @@ public class MaskingUpdateSchedule {
             authentication.scope());
       }
       ResponseEntity<SubjectMetadataResponse> metadata =
-          confluentApiClient.retrieveSubjectMetadata(URI.create(baseUrl), null, topic,
+          confluentApiClient.retrieveSubjectMetadata(URI.create(baseUrl),
+              isConfluentEnabled.get() ? authorization: null,
+              topic,
               URI.create(baseUrl).getHost());
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
         return metadata.getBody();
