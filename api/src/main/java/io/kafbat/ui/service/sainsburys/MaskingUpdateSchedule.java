@@ -452,8 +452,8 @@ public class MaskingUpdateSchedule {
           .map(String::toLowerCase)
           .toList();
 
-      List<String> fieldsToMask = mask.getFields() == null || mask.getFields().isEmpty() ?
-          confluentTopicFieldsList : fieldsToMask(mask.getFields(),
+      List<String> fieldsToMask = mask.getFields() == null || mask.getFields().isEmpty()
+          ? confluentTopicFieldsList : fieldsToMask(mask.getFields(),
           confluentTopicFieldsList);
       log.info("MaskClusterStorage confluent fields to mask null: {}, and list: {}",
           fieldsToMask == null, fieldsToMask);
