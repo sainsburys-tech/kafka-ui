@@ -327,85 +327,85 @@ public class MaskingUpdateSchedule {
         .map(topic -> {
           confluentSubjectList.stream().filter(s -> s.contains(topic))
               .forEach(subject -> {
-            try {
+                try {
 
-              log.info("MaskClusterStorage Processing Topic: {} for cluster: {}", topic, cluster.getName());
-              if (cluster.getOriginalProperties().getMasking() == null
-                  || cluster.getOriginalProperties().getMasking().isEmpty()) {
+                  log.info("MaskClusterStorage Processing Topic: {} for cluster: {}", topic, cluster.getName());
+                  if (cluster.getOriginalProperties().getMasking() == null
+                      || cluster.getOriginalProperties().getMasking().isEmpty()) {
 
-                log.info("MaskClusterStorage Fetch Topic: {} Metadata", topic);
-                SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
-                    authUrl,
-                    authentication,
-                    subject);
+                    log.info("MaskClusterStorage Fetch Topic: {} Metadata", topic);
+                    SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
+                        authUrl,
+                        authentication,
+                        subject);
 
-                if (confluentTopicFieldsResponse != null
-                    && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
-                  log.info("MaskClusterStorage Field Mask Topic: {}", topic);
-                  updateFieldLevelMasking(cluster, topic,
-                      new ClustersProperties.Masking(),
-                      isMetadataUpdated,
-                      confluentTopicFieldsResponse);
-                } else {
-                  log.info("MaskClusterStorage Topic Level Mask: {}, Subject: {}", topic, subject);
-                  updateTopicLevelMasking(cluster, topic,
-                      new ClustersProperties.Masking(),
-                      isMetadataUpdated,
-                      confluentTopicFieldsResponse);
-                }
-              } else {
-                log.info("MaskClusterStorage Fetch2 Topic: {} Metadata", topic);
-                SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
-                    authUrl,
-                    authentication,
-                    topic);
-
-                if (confluentTopicFieldsResponse != null
-                    && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
-                  log.info("MaskClusterStorage Field2 Mask Topic: {}", topic);
-                  List<ClustersProperties.@Valid Masking> fieldMaskList =
-                      cluster.getOriginalProperties().getMasking().stream()
-                          .filter(mask -> mask.getType().equals(
-                              ClustersProperties.Masking.Type.MASK))
-                          .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic))
-                          .toList();
-
-                  if (!fieldMaskList.isEmpty()) {
-                    fieldMaskList.forEach(mask -> {
-                      updateFieldLevelMasking(cluster, topic, mask, isMetadataUpdated,
-                          confluentTopicFieldsResponse);
-                    });
-                  } else {
-                    updateFieldLevelMasking(cluster, topic,
-                        new ClustersProperties.Masking(),
-                        isMetadataUpdated, confluentTopicFieldsResponse);
-                  }
-                } else {
-                  log.info("MaskClusterStorage Topic2 Mask: {}", topic);
-                  List<ClustersProperties.@Valid Masking> topicMaskList =
-                      cluster.getOriginalProperties().getMasking().stream()
-                          .filter(mask -> mask.getType().equals(
-                              ClustersProperties.Masking.Type.REPLACE))
-                          .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic))
-                          .toList();
-
-                  if (!topicMaskList.isEmpty()) {
-                    topicMaskList.forEach(mask -> {
-                      updateTopicLevelMasking(cluster, topic, mask,
+                    if (confluentTopicFieldsResponse != null
+                        && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+                      log.info("MaskClusterStorage Field Mask Topic: {}", topic);
+                      updateFieldLevelMasking(cluster, topic,
+                          new ClustersProperties.Masking(),
                           isMetadataUpdated,
                           confluentTopicFieldsResponse);
-                    });
+                    } else {
+                      log.info("MaskClusterStorage Topic Level Mask: {}, Subject: {}", topic, subject);
+                      updateTopicLevelMasking(cluster, topic,
+                          new ClustersProperties.Masking(),
+                          isMetadataUpdated,
+                          confluentTopicFieldsResponse);
+                    }
                   } else {
-                    updateTopicLevelMasking(cluster, topic,
-                        new ClustersProperties.Masking(),
-                        isMetadataUpdated,
-                        confluentTopicFieldsResponse);
+                    log.info("MaskClusterStorage Fetch2 Topic: {} Metadata", topic);
+                    SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
+                        authUrl,
+                        authentication,
+                        topic);
+
+                    if (confluentTopicFieldsResponse != null
+                        && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
+                      log.info("MaskClusterStorage Field2 Mask Topic: {}", topic);
+                      List<ClustersProperties.@Valid Masking> fieldMaskList =
+                          cluster.getOriginalProperties().getMasking().stream()
+                              .filter(mask -> mask.getType().equals(
+                                  ClustersProperties.Masking.Type.MASK))
+                              .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic))
+                              .toList();
+
+                      if (!fieldMaskList.isEmpty()) {
+                        fieldMaskList.forEach(mask -> {
+                          updateFieldLevelMasking(cluster, topic, mask, isMetadataUpdated,
+                              confluentTopicFieldsResponse);
+                        });
+                      } else {
+                        updateFieldLevelMasking(cluster, topic,
+                            new ClustersProperties.Masking(),
+                            isMetadataUpdated, confluentTopicFieldsResponse);
+                      }
+                    } else {
+                      log.info("MaskClusterStorage Topic2 Mask: {}", topic);
+                      List<ClustersProperties.@Valid Masking> topicMaskList =
+                          cluster.getOriginalProperties().getMasking().stream()
+                              .filter(mask -> mask.getType().equals(
+                                  ClustersProperties.Masking.Type.REPLACE))
+                              .filter(mask -> mask.getTopicValuesPattern().equalsIgnoreCase(topic))
+                              .toList();
+
+                      if (!topicMaskList.isEmpty()) {
+                        topicMaskList.forEach(mask -> {
+                          updateTopicLevelMasking(cluster, topic, mask,
+                              isMetadataUpdated,
+                              confluentTopicFieldsResponse);
+                        });
+                      } else {
+                        updateTopicLevelMasking(cluster, topic,
+                            new ClustersProperties.Masking(),
+                            isMetadataUpdated,
+                            confluentTopicFieldsResponse);
+                      }
+                    }
                   }
+                } catch (Exception e) {
+                  log.info("MaskClusterStorage Failed Processing Topic: {}, Message: {}", topic, e.getMessage());
                 }
-              }
-            } catch (Exception e) {
-              log.info("MaskClusterStorage Failed Processing Topic: {}, Message: {}", topic, e.getMessage());
-            }
           });
 
           return Mono.empty();
