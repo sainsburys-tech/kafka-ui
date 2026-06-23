@@ -76,7 +76,6 @@ public class KafkaClusterFactory {
       maskingList.addAll(dynamoClusterProperties.retrieveDynamoMaskingToMaskingList(clusterProperties.getName()));
     }
     builder.masking(DataMasking.create(maskingList));
-    builder.masking(DataMasking.create(clusterProperties.getMasking()));
     builder.pollingSettings(PollingSettings.create(clusterProperties, properties));
 
     if (schemaRegistryConfigured(clusterProperties)) {
