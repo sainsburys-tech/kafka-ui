@@ -406,7 +406,7 @@ public class MaskingUpdateSchedule {
                 } catch (Exception e) {
                   log.info("MaskClusterStorage Failed Processing Topic: {}, Message: {}", topic, e.getMessage());
                 }
-          });
+              });
 
           return Mono.empty();
         })
