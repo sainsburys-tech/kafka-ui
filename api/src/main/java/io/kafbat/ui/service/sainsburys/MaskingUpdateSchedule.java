@@ -253,7 +253,8 @@ public class MaskingUpdateSchedule {
                     || cluster.getOriginalProperties().getMasking().isEmpty()) {
 
                   log.info("MaskClusterStorage Fetch Topic: {} Metadata", subject);
-                  SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl, authUrl,
+                  SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
+                      authUrl,
                       null,
                       subject,
                       isConfluentEnabled);
@@ -274,7 +275,8 @@ public class MaskingUpdateSchedule {
                   }
                 } else {
                   log.info("MaskClusterStorage Fetch2 Topic: {} Metadata", topic.getName());
-                  SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl, authUrl,
+                  SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
+                      authUrl,
                       null,
                       subject,
                       isConfluentEnabled);
