@@ -52,11 +52,15 @@ public class UnmaskingService {
   public static final String KAFKA_TOPIC_SERVICENOW_DESCRIPTION = "<kafka_topic>";
   public static final String JUSTIFICATION_SERVICENOW_DESCRIPTION = "<justification>";
   public static final String RBAC_UNMASK_USER_ROLE_S_S_S_UNMASK = "%s_%s_%s_unmask";
+  public static final int DATA_UNMASKING_JUSTIFICATION_SIZE = 50;
   private final AdminClientService adminClientService;
   private final ServiceNowClient serviceNowClient;
   private final AccessControlService accessControlService;
   private final ServiceNowRequestConfig serviceNowRequestConfig;
   private final DynamoRbacEntityRepository dynamoRbacEntityRepository;
+
+  @Value("${sainsburys.masking.feature.enabled: 'false' }")
+  private String isMaskingEnabled;
 
   @Value("${sainsburys.masking.rule.time-to-live: 3600000}")
   private Long timeToLive;
@@ -95,8 +99,17 @@ public class UnmaskingService {
   private Mono<RecordMetadata> decryptImpl(KafkaCluster cluster,
                                            TopicDescription topicDescription,
                                            UnmaskRequestDTO msg, String principal) {
+
+    if (!Boolean.parseBoolean(isMaskingEnabled)) {
+      return Mono.error(new ValidationException("Data masking feature is not in active status."));
+    }
+
     if (msg.getJustification() == null) {
       return Mono.error(new ValidationException("No justification provided for request"));
+    }
+
+    if (msg.getJustification().length() < DATA_UNMASKING_JUSTIFICATION_SIZE) {
+      return Mono.error(new ValidationException("Justification must be atleast 50 characters"));
     }
 
     try {
