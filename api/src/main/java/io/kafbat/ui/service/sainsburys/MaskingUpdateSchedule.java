@@ -256,10 +256,7 @@ public class MaskingUpdateSchedule {
 
                   log.info("MaskClusterStorage Fetch Topic: {} Metadata", subject);
                   SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
-                      authUrl,
-                      null,
-                      subject,
-                      isConfluentEnabled);
+                      subject);
 
                   if (confluentTopicFieldsResponse != null
                       && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
@@ -278,10 +275,7 @@ public class MaskingUpdateSchedule {
                 } else {
                   log.info("MaskClusterStorage Fetch2 Topic: {} Metadata", topic.getName());
                   SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
-                      authUrl,
-                      null,
-                      subject,
-                      isConfluentEnabled);
+                      subject);
 
                   if (confluentTopicFieldsResponse != null
                       && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
@@ -357,10 +351,7 @@ public class MaskingUpdateSchedule {
                       || cluster.getOriginalProperties().getMasking().isEmpty()) {
 
                     SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
-                        authUrl,
-                        authentication,
-                        subject,
-                        isConfluentEnabled);
+                        subject);
 
                     log.info("MaskClusterStorage Fetch Metadata: {}",
                         confluentTopicFieldsResponse != null ? confluentTopicFieldsResponse.getSchema() : null);
@@ -381,10 +372,7 @@ public class MaskingUpdateSchedule {
                   } else {
                     log.info("MaskClusterStorage Fetch2 Topic: {} Metadata", topic);
                     SubjectMetadataResponse confluentTopicFieldsResponse = retrieveSubjectMetadataResponses(baseUrl,
-                        authUrl,
-                        authentication,
-                        topic,
-                        isConfluentEnabled);
+                        topic);
 
                     if (confluentTopicFieldsResponse != null
                         && confluentTopicFieldsResponse.getSchema().contains(schemaDataClassificationTag)) {
@@ -652,22 +640,12 @@ public class MaskingUpdateSchedule {
       retryFor = { FeignException.class },
       backoff = @Backoff(delay = 2000, multiplier = 2)
   )
-  private SubjectMetadataResponse retrieveSubjectMetadataResponses(String baseUrl, String authUrl,
-                                                                   SchemaRegistryAuth authentication,
-                                                                   String topic, AtomicBoolean isConfluentEnabled) {
+  private SubjectMetadataResponse retrieveSubjectMetadataResponses(String baseUrl, String topic) {
     try {
       log.info("MaskClusterStorage retrieveSubjectMetadataResponses");
-      String authorization = null;
-      if (authentication != null && authentication.scope() == null) {
-        authorization = ConfluentAuthConfig.generateBasicAuthentication(authentication.username(),
-            authentication.password());
-      } else if (authentication != null) {
-        authorization = generateBearerToken(authUrl, authentication.username(), authentication.password(),
-            authentication.scope());
-      }
       ResponseEntity<SubjectMetadataResponse> metadata =
           confluentApiClient.retrieveSubjectMetadata(URI.create(baseUrl),
-              isConfluentEnabled.get() ? authorization : null,
+               null,
               topic,
               URI.create(baseUrl).getHost());
       if (metadata != null && metadata.getStatusCode().is2xxSuccessful()) {
