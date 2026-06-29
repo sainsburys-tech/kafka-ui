@@ -41,6 +41,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -98,6 +99,7 @@ public class MaskingUpdateSchedule {
     this.adminClientService = adminClientService;
   }
 
+  @Async
   @Scheduled(fixedRateString = "${sainsburys.masking.scheduler.update-masking-tags-rate-millis:3000000}",
       initialDelay = 10000)
   protected void executeMasking() {
