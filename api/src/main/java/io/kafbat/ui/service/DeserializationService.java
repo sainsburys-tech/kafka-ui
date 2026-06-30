@@ -34,8 +34,14 @@ import org.springframework.stereotype.Component;
 public class DeserializationService implements Closeable {
 
   private final Map<String, ClusterSerdes> clusterSerdes = new ConcurrentHashMap<>();
+  /**
+   * Sainsburys Dynamo Cluster Properties
+   */
   private final DynamoClusterProperties dynamoClusterProperties;
 
+  /**
+   * Sainsburys PII Feature Flag
+   */
   @Value("${sainsburys.masking.feature.enabled: false }")
   private boolean isMaskingEnabled;
 
@@ -122,6 +128,15 @@ public class DeserializationService implements Closeable {
     );
   }
 
+  /**
+   * Sainsburys Deserializer for topic using prinicpal has temp role
+   * @param cluster
+   * @param topic
+   * @param principal
+   * @param keySerdeName
+   * @param valueSerdeName
+   * @return
+   */
   public ConsumerRecordDeserializer deserializerFor(KafkaCluster cluster,
                                                     String topic,
                                                     String principal,

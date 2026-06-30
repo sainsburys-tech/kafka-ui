@@ -209,6 +209,19 @@ public class MessagesService {
     return new KafkaProducer<>(properties);
   }
 
+  /**
+   * Sainsburys loadMessages with PII Rbac Role Deserializer check
+   * @param cluster
+   * @param topic
+   * @param principal
+   * @param consumerPosition
+   * @param containsStringFilter
+   * @param filterId
+   * @param limit
+   * @param keySerde
+   * @param valueSerde
+   * @return
+   */
   public Flux<TopicMessageEventDTO> loadMessages(KafkaCluster cluster,
                                                  String topic,
                                                  String principal,

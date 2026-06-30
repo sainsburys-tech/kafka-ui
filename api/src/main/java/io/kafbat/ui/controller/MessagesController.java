@@ -51,6 +51,9 @@ public class MessagesController extends AbstractController implements MessagesAp
   private final MessagesService messagesService;
   private final DeserializationService deserializationService;
 
+  /**
+   * Sainsburys PII Feature Flag
+   */
   @Value("${sainsburys.masking.feature.enabled: 'false' }")
   private String isMaskingEnabled;
 
@@ -121,7 +124,7 @@ public class MessagesController extends AbstractController implements MessagesAp
     }
 
     var accessContext = contextBuilder.build();
-
+    // Sainsburys validate message loader based on masking role for principal
     return exchange.getPrincipal().map(Principal::getName)
         .flatMap(principal -> {
           Flux<TopicMessageEventDTO> messagesFlux;

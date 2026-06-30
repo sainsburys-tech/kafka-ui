@@ -70,6 +70,13 @@ public class DataMasking {
         .value(valMasker.apply(msg.getValue()));
   }
 
+  /**
+   * Sainsburys get Masker for Topic
+   * @param topic
+   * @param maskList
+   * @param hasUnmaskRole
+   * @return
+   */
   public UnaryOperator<TopicMessageDTO> getMaskerForTopic(String topic, List<Mask> maskList, boolean hasUnmaskRole) {
     var keyMasker = getMaskingFunction(topic, Serde.Target.KEY, maskList, hasUnmaskRole);
     var valMasker = getMaskingFunction(topic, Serde.Target.VALUE, maskList, hasUnmaskRole);
