@@ -91,6 +91,7 @@ const Topic: React.FC = () => {
         >
           Produce Message
         </ActionButton>
+        {/*
         <ActionButton
           buttonSize="M"
           buttonType="primary"
@@ -103,7 +104,7 @@ const Topic: React.FC = () => {
           }}
         >
           Unmask Messages
-        </ActionButton>
+        </ActionButton> */}
         <Dropdown disabled={isReadOnly || data?.internal}>
           <ActionDropdownItem
             onClick={() => navigate(clusterTopicEditRelativePath)}
