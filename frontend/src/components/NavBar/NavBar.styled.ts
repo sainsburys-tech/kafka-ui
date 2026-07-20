@@ -29,7 +29,9 @@ export const NavbarBrand = styled.div`
   padding-left: 8px;
 `;
 
-export const EnvironmentBadge = styled.span`
+export const EnvironmentBadge = styled.span<{
+  environmentColor: string;
+}>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -47,8 +49,8 @@ export const EnvironmentBadge = styled.span`
   letter-spacing: 0.05em;
   text-transform: uppercase;
 
-  background: ${({ theme }) => theme.primary}; 
-  color: env(ENVIRONMENT_IDENTIFIER_COLOR, rgb(0, 71, 255));
+  background: ${({ theme }) => theme.primary};
+  color: ${({ environmentColor }) => environmentColor};
 `;
 
 
