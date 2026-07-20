@@ -24,7 +24,7 @@ export const ENVIRONMENT_IDENTIFIER_LABEL =
   process.env.ENVIRONMENT_IDENTIFIER_LABEL ?? 'LOCAL';
 
 export const ENVIRONMENT_IDENTIFIER_COLOR =
-  process.env.ENVIRONMENT_IDENTIFIER_COLOR ?? 'rgb(0, 140, 255)';
+  process.env.ENVIRONMENT_IDENTIFIER_COLOR ?? 'rgb(0, 71, 255)';
 
 
 export type ThemeDropDownValue = 'auto_theme' | 'light_theme' | 'dark_theme';
@@ -74,11 +74,11 @@ const NavBar: React.FC<Props> = ({ onBurgerClick }) => {
           kafbat UI
         </S.Hyperlink>
 
-        <S.EnvironmentBadge
-          environmentColor={ENVIRONMENT_IDENTIFIER_COLOR}
-        >
-          {ENVIRONMENT_IDENTIFIER_LABEL}
-        </S.EnvironmentBadge>
+      <S.EnvironmentBadge
+        environmentColor={ENVIRONMENT_IDENTIFIER_COLOR}
+      >
+        {ENVIRONMENT_IDENTIFIER_LABEL}
+      </S.EnvironmentBadge>
 
         <S.NavbarItem>
           <Version />
