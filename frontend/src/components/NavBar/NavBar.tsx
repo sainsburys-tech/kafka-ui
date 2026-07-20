@@ -23,6 +23,9 @@ interface Props {
 export const ENVIRONMENT_IDENTIFIER_LABEL =
   process.env.ENVIRONMENT_IDENTIFIER_LABEL ?? 'LOCAL';
 
+export const ENVIRONMENT_IDENTIFIER_COLOR =
+  process.env.ENVIRONMENT_IDENTIFIER_COLOR ?? 'rgb(0, 140, 255)';
+
 
 export type ThemeDropDownValue = 'auto_theme' | 'light_theme' | 'dark_theme';
 
