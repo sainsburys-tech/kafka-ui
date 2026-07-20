@@ -74,7 +74,9 @@ const NavBar: React.FC<Props> = ({ onBurgerClick }) => {
           kafbat UI
         </S.Hyperlink>
 
-        <S.EnvironmentBadge>
+        <S.EnvironmentBadge
+          environmentColor={ENVIRONMENT_IDENTIFIER_COLOR}
+        >
           {ENVIRONMENT_IDENTIFIER_LABEL}
         </S.EnvironmentBadge>
 
