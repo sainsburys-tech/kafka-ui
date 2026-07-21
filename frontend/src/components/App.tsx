@@ -22,6 +22,7 @@ import ConfirmationModal from './common/ConfirmationModal/ConfirmationModal';
 import { ConfirmContextProvider } from './contexts/ConfirmContext';
 import { GlobalSettingsProvider } from './contexts/GlobalSettingsContext';
 import { UserInfoRolesAccessProvider } from './contexts/UserInfoRolesAccessContext';
+import { EnvironmentConfigProvider } from './contexts/EnvironmentConfigContext';
 import PageContainer from './PageContainer/PageContainer';
 
 const AuthPage = React.lazy(() => import('components/AuthPage/AuthPage'));
@@ -59,47 +60,49 @@ const App: React.FC = () => {
           <AuthPage />
         ) : (
           <GlobalSettingsProvider>
-            <Suspense fallback={<PageLoader fullSize />}>
-              <UserInfoRolesAccessProvider>
-                <ConfirmContextProvider>
-                  <GlobalCSS />
-                  <S.Layout>
-                    <PageContainer>
-                      <Routes>
-                        {['/', '/ui', '/ui/clusters'].map((path) => (
+            <EnvironmentConfigProvider>
+              <Suspense fallback={<PageLoader fullSize />}>
+                <UserInfoRolesAccessProvider>
+                  <ConfirmContextProvider>
+                    <GlobalCSS />
+                    <S.Layout>
+                      <PageContainer>
+                        <Routes>
+                          {['/', '/ui', '/ui/clusters'].map((path) => (
+                            <Route
+                              key="Home" // optional: avoid full re-renders on route changes
+                              path={path}
+                              element={<Dashboard />}
+                            />
+                          ))}
                           <Route
-                            key="Home" // optional: avoid full re-renders on route changes
-                            path={path}
-                            element={<Dashboard />}
+                            path={getNonExactPath(clusterNewConfigPath)}
+                            element={<ClusterConfigForm />}
                           />
-                        ))}
-                        <Route
-                          path={getNonExactPath(clusterNewConfigPath)}
-                          element={<ClusterConfigForm />}
-                        />
-                        <Route
-                          path={getNonExactPath(clusterPath())}
-                          element={<ClusterPage />}
-                        />
-                        <Route
-                          path={accessErrorPage}
-                          element={
-                            <ErrorPage status={403} text="Access is Denied" />
-                          }
-                        />
-                        <Route path={errorPage} element={<ErrorPage />} />
-                        <Route
-                          path="*"
-                          element={<Navigate to={errorPage} replace />}
-                        />
-                      </Routes>
-                    </PageContainer>
-                    <Toaster position="bottom-right" />
-                  </S.Layout>
-                  <ConfirmationModal />
-                </ConfirmContextProvider>
-              </UserInfoRolesAccessProvider>
-            </Suspense>
+                          <Route
+                            path={getNonExactPath(clusterPath())}
+                            element={<ClusterPage />}
+                          />
+                          <Route
+                            path={accessErrorPage}
+                            element={
+                              <ErrorPage status={403} text="Access is Denied" />
+                            }
+                          />
+                          <Route path={errorPage} element={<ErrorPage />} />
+                          <Route
+                            path="*"
+                            element={<Navigate to={errorPage} replace />}
+                          />
+                        </Routes>
+                      </PageContainer>
+                      <Toaster position="bottom-right" />
+                    </S.Layout>
+                    <ConfirmationModal />
+                  </ConfirmContextProvider>
+                </UserInfoRolesAccessProvider>
+              </Suspense>
+            </EnvironmentConfigProvider>
           </GlobalSettingsProvider>
         )}
       </ThemeProvider>
