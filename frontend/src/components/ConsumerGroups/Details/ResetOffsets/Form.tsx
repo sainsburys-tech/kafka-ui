@@ -67,6 +67,7 @@ const Form: React.FC<FormProps> = ({ defaultValues, partitions, topics }) => {
   const topicValue = watch('topic');
   const offsetsValue = watch('partitionsOffsets');
   const partitionsValue = watch('partitions') || [];
+  var userVerifiedResetOffsets = false
 
   const partitionOptions =
     partitions
@@ -186,18 +187,31 @@ const Form: React.FC<FormProps> = ({ defaultValues, partitions, topics }) => {
             )}
         </FlexFieldset>
         <div>
+          <h1>
+            Please confirm the environment is correct before resetting offsets. This action cannot be undone.
+          </h1>
+          <Button
+            buttonSize="M"
+            buttonType="primary"
+            type="button"
+            disabled={false}
+            onClick={() => { userVerifiedResetOffsets = true; }}
+          >
+            I understand and confirm the environment is correct. Resetting a production topic by mistake can cause service outages.
+          </Button>
+        </div>
+        <div>
           <Button
             buttonSize="M"
             buttonType="primary"
             type="submit"
-            disabled={partitionsValue.length === 0}
+            disabled={(partitionsValue.length === 0) && userVerifiedResetOffsets}
           >
             Reset Offsets
           </Button>
         </div>
+      
       </StyledForm>
     </FormProvider>
   );
 };
-
-export default Form;
