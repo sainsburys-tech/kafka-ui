@@ -67,7 +67,6 @@ const Form: React.FC<FormProps> = ({ defaultValues, partitions, topics }) => {
   const topicValue = watch('topic');
   const offsetsValue = watch('partitionsOffsets');
   const partitionsValue = watch('partitions') || [];
-  var userVerifiedResetOffsets = false
 
   const partitionOptions =
     partitions
@@ -99,11 +98,25 @@ const Form: React.FC<FormProps> = ({ defaultValues, partitions, topics }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicValue]);
 
-  const onSubmit = async (data: ConsumerGroupOffsetsReset) => {
-    await reset.mutateAsync(data);
-    navigate(-1);
-  };
 
+  // const onSubmit = async (data: ConsumerGroupOffsetsReset) => {
+  //   await reset.mutateAsync(data);
+  //   navigate(-1);
+  // };
+const onSubmit = async (data: ConsumerGroupOffsetsReset) => {
+  var resetOffsetConfirmed = window.confirm(
+    'Reset consumer group offsets?\n\n' +
+      'This action is irreversible and cannot be undone. ' +
+      'Are you sure you want to continue?'
+  );
+//todo: add color to the confirm dialog to make it more visible that this is a destructive action
+  if (!resetOffsetConfirmed) {
+    return;
+  }
+
+  await reset.mutateAsync(data);
+  navigate(-1);
+};
   return (
     <FormProvider {...methods}>
       <StyledForm onSubmit={handleSubmit(onSubmit)}>
@@ -187,31 +200,18 @@ const Form: React.FC<FormProps> = ({ defaultValues, partitions, topics }) => {
             )}
         </FlexFieldset>
         <div>
-          <h1>
-            Please confirm the environment is correct before resetting offsets. This action cannot be undone.
-          </h1>
-          <Button
-            buttonSize="M"
-            buttonType="primary"
-            type="button"
-            disabled={false}
-            onClick={() => { userVerifiedResetOffsets = true; }}
-          >
-            I understand and confirm the environment is correct. Resetting a production topic by mistake can cause service outages.
-          </Button>
-        </div>
-        <div>
           <Button
             buttonSize="M"
             buttonType="primary"
             type="submit"
-            disabled={(partitionsValue.length === 0) && userVerifiedResetOffsets}
+            disabled={partitionsValue.length === 0}
           >
             Reset Offsets
           </Button>
         </div>
-      
       </StyledForm>
     </FormProvider>
   );
 };
+
+export default Form;
