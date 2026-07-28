@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/environment-config")
 public class EnvironmentConfigController {
 
-  @Value("${ENVIRONMENT_IDENTIFIER_LABEL:DEV-INITELY NOT PRODUCTION}")
+  @Value("${ENVIRONMENT_IDENTIFIER_LABEL:LOCAL}")
   private String environmentIdentifierLabel;
 
   @Value("${ENVIRONMENT_IDENTIFIER_COLOR:rgb(0, 71, 255)}")
