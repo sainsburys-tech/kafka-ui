@@ -98,10 +98,22 @@ const Form: React.FC<FormProps> = ({ defaultValues, partitions, topics }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicValue]);
 
-  const onSubmit = async (data: ConsumerGroupOffsetsReset) => {
-    await reset.mutateAsync(data);
-    navigate(-1);
-  };
+const resetOffsetConfirmedText =
+  'Are you in the correct environment for this reset?\n\n' +
+  'This action is irreversible and cannot be undone.\n\n' +
+  'Resetting production by mistake will result in data loss and potential downtime.\n\n' +
+  'Are you sure you want to continue?';
+
+const onSubmit = async (data: ConsumerGroupOffsetsReset) => {
+  const resetOffsetConfirmed = window.confirm(resetOffsetConfirmedText);
+
+  if (!resetOffsetConfirmed) {
+    return;
+  }
+
+  await reset.mutateAsync(data);
+  navigate(-1);
+};
 
   return (
     <FormProvider {...methods}>
