@@ -105,9 +105,9 @@ const Form: React.FC<FormProps> = ({ defaultValues, partitions, topics }) => {
   // };
 const onSubmit = async (data: ConsumerGroupOffsetsReset) => {
   var resetOffsetConfirmed = window.confirm(
-    'Are you in the correct environment for this reset?\n\n' +
-      'This action is irreversible and cannot be undone. ' +
-      'Make sure you have double-checked the environment and the consumer group before proceeding.' +
+    'Are you in the correct environment for this reset?\r\n' +
+      'This action is irreversible and cannot be undone. \r\n' +
+      'Make sure you have double-checked the environment and the consumer group before proceeding.\r\n' +
       'Resetting production by mistake will result in data loss and potential downtime. ' 
   );
 //todo: add color to the confirm dialog to make it more visible that this is a destructive action
