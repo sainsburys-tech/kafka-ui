@@ -98,18 +98,15 @@ const Form: React.FC<FormProps> = ({ defaultValues, partitions, topics }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicValue]);
 
+const resetOffsetConfirmedText =
+  'Are you in the correct environment for this reset?\n\n' +
+  'This action is irreversible and cannot be undone.\n\n' +
+  'Resetting production by mistake will result in data loss and potential downtime.\n\n' +
+  'Are you sure you want to continue?';
 
-  // const onSubmit = async (data: ConsumerGroupOffsetsReset) => {
-  //   await reset.mutateAsync(data);
-  //   navigate(-1);
-  // };
 const onSubmit = async (data: ConsumerGroupOffsetsReset) => {
-  var resetOffsetConfirmed = window.confirm(
-    'Reset consumer group offsets?\n\n' +
-      'This action is irreversible and cannot be undone. ' +
-      'Are you sure you want to continue?'
-  );
-//todo: add color to the confirm dialog to make it more visible that this is a destructive action
+  const resetOffsetConfirmed = window.confirm(resetOffsetConfirmedText);
+
   if (!resetOffsetConfirmed) {
     return;
   }
@@ -117,6 +114,7 @@ const onSubmit = async (data: ConsumerGroupOffsetsReset) => {
   await reset.mutateAsync(data);
   navigate(-1);
 };
+
   return (
     <FormProvider {...methods}>
       <StyledForm onSubmit={handleSubmit(onSubmit)}>
