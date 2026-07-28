@@ -8,7 +8,6 @@ import AutoIcon from 'components/common/Icons/AutoIcon';
 import SunIcon from 'components/common/Icons/SunIcon';
 import MoonIcon from 'components/common/Icons/MoonIcon';
 import { ThemeModeContext } from 'components/contexts/ThemeModeContext';
-import { EnvironmentConfigContext } from 'components/contexts/EnvironmentConfigContext';
 import ProductHuntIcon from 'components/common/Icons/ProductHuntIcon';
 import { Button } from 'components/common/Button/Button';
 import MenuIcon from 'components/common/Icons/MenuIcon';
@@ -20,6 +19,7 @@ import * as S from './NavBar.styled';
 interface Props {
   onBurgerClick: () => void;
 }
+
 export type ThemeDropDownValue = 'auto_theme' | 'light_theme' | 'dark_theme';
 
 const options = [
@@ -54,7 +54,6 @@ const options = [
 
 const NavBar: React.FC<Props> = ({ onBurgerClick }) => {
   const { themeMode, setThemeMode } = useContext(ThemeModeContext);
-  const { label, color } = useContext(EnvironmentConfigContext);
 
   return (
     <S.Navbar role="navigation" aria-label="Page Header">
@@ -73,15 +72,6 @@ const NavBar: React.FC<Props> = ({ onBurgerClick }) => {
             <Version />
           </S.NavbarItem>
         </S.NavbarBrand>
-      <S.EnvironmentBadge
-        environmentColor={color}
-      >
-        {label}
-      </S.EnvironmentBadge>
-
-        <S.NavbarItem>
-          <Version />
-        </S.NavbarItem>
       </S.NavbarBrand>
       <S.NavbarSocial>
         <UserTimezone />
