@@ -13,6 +13,7 @@ import "./auth.tsp";
 import "./config.tsp";
 import "./graphs.tsp";
 import "./prometheus.tsp";
+import "./unmasking.tsp";
 
 import "@typespec/http";
 import "@typespec/rest";

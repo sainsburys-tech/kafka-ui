@@ -147,7 +147,6 @@ public class AccessControlService {
         .stream()
         .filter(filterRole(user))
         .anyMatch(role -> role.getClusters().stream().anyMatch(clusterName::equalsIgnoreCase));
-    
     return isAccessible || properties.getDefaultRole() != null;
   }
 

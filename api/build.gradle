@@ -83,6 +83,16 @@ dependencies {
     implementation (libs.google.oauth.client) {
         because("CVE Fix: It is excluded above because of a vulnerability")
     }
+    //Custom Sainsburys API Integration
+    implementation libs.openfeign
+
+    // Custom Sainsburys DynamoDb
+    implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.12.200'
+    implementation 'io.github.boostchicken:spring-data-dynamodb:5.2.5'
+
+    // Custom Sainsburys Retryable
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 
     implementation libs.prometheus.metrics.core
     implementation libs.prometheus.metrics.textformats
@@ -118,6 +128,12 @@ dependencies {
     testImplementation libs.okhttp3
     testImplementation libs.okhttp3.mockwebserver
     testImplementation libs.prometheus.metrics.core
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:2025.0.1"
+    }
 }
 
 generateGrammarSource {

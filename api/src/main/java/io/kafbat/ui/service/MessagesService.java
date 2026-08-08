@@ -216,6 +216,25 @@ public class MessagesService {
 
   public Flux<TopicMessageEventDTO> loadMessages(KafkaCluster cluster,
                                                  String topic,
+                                                 String principal,
+                                                 ConsumerPosition consumerPosition,
+                                                 @Nullable String containsStringFilter,
+                                                 @Nullable String filterId,
+                                                 @Nullable Integer limit,
+                                                 @Nullable String keySerde,
+                                                 @Nullable String valueSerde) {
+    return loadMessages(
+        cluster,
+        topic,
+        deserializationService.deserializerFor(cluster, topic, principal, keySerde, valueSerde),
+        consumerPosition,
+        getMsgFilter(containsStringFilter, filterId),
+        fixPageSize(limit)
+    );
+  }
+
+  public Flux<TopicMessageEventDTO> loadMessages(KafkaCluster cluster,
+                                                 String topic,
                                                  ConsumerPosition consumerPosition,
                                                  @Nullable String containsStringFilter,
                                                  @Nullable String filterId,

@@ -27,11 +27,14 @@ import io.kafbat.ui.serde.api.Serde;
 import io.kafbat.ui.service.DeserializationService;
 import io.kafbat.ui.service.MessagesService;
 import io.kafbat.ui.service.mcp.McpTool;
+import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,6 +50,9 @@ public class MessagesController extends AbstractController implements MessagesAp
 
   private final MessagesService messagesService;
   private final DeserializationService deserializationService;
+
+  @Value("${sainsburys.masking.feature.enabled: 'false' }")
+  private String isMaskingEnabled;
 
   @Override
   public Mono<ResponseEntity<Void>> deleteTopicMessages(
@@ -75,7 +81,7 @@ public class MessagesController extends AbstractController implements MessagesAp
         .map(ResponseEntity::ok);
   }
 
-  @Deprecated(forRemoval = true, since = "1.1.0")
+  @Deprecated
   @Override
   public Mono<ResponseEntity<Flux<TopicMessageEventDTO>>> getTopicMessages(String clusterName,
                                                                            String topicName,
@@ -116,25 +122,40 @@ public class MessagesController extends AbstractController implements MessagesAp
 
     var accessContext = contextBuilder.build();
 
-    Flux<TopicMessageEventDTO> messagesFlux;
-    if (cursor != null) {
-      messagesFlux = messagesService.loadMessages(getCluster(clusterName), topicName, cursor);
-    } else {
-      var pollingMode = mode == null ? PollingModeDTO.LATEST : mode;
-      messagesFlux = messagesService.loadMessages(
-          getCluster(clusterName),
-          topicName,
-          ConsumerPosition.create(pollingMode, checkNotNull(topicName), partitions, timestamp, offset),
-          stringFilter,
-          smartFilterId,
-          limit,
-          keySerde,
-          valueSerde
-      );
-    }
-    return accessControlService.validateAccess(accessContext)
-        .then(Mono.just(ResponseEntity.ok(messagesFlux)))
-        .doOnEach(sig -> auditService.audit(accessContext, sig));
+    return exchange.getPrincipal().map(Principal::getName)
+        .flatMap(principal -> {
+          Flux<TopicMessageEventDTO> messagesFlux;
+          if (cursor != null) {
+            messagesFlux = messagesService.loadMessages(getCluster(clusterName), topicName, cursor);
+          } else {
+            var pollingMode = mode == null ? PollingModeDTO.LATEST : mode;
+            if (Boolean.parseBoolean(isMaskingEnabled)) {
+              log.debug("=============== Unmask principal: {}",  principal);
+              messagesFlux = messagesService.loadMessages(getCluster(clusterName),
+                  topicName,
+                  principal,
+                  ConsumerPosition.create(pollingMode, checkNotNull(topicName), partitions, timestamp, offset),
+                  stringFilter,
+                  smartFilterId,
+                  limit,
+                  keySerde,
+                  valueSerde);
+            } else {
+              messagesFlux = messagesService.loadMessages(getCluster(clusterName),
+                  topicName,
+                  ConsumerPosition.create(pollingMode, checkNotNull(topicName), partitions, timestamp, offset),
+                  stringFilter,
+                  smartFilterId,
+                  limit,
+                  keySerde,
+                  valueSerde);
+            }
+          }
+          return accessControlService.validateAccess(accessContext)
+              .then(Mono.just(ResponseEntity.ok(messagesFlux)))
+              .doOnEach(sig -> auditService.audit(accessContext, sig));
+        });
+
   }
 
   @Override
