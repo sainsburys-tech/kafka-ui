@@ -19,6 +19,7 @@ import io.kafbat.ui.service.ksql.KsqlApiClient;
 import io.kafbat.ui.service.masking.DataMasking;
 import io.kafbat.ui.service.metrics.scrape.MetricsScraper;
 import io.kafbat.ui.service.metrics.scrape.jmx.JmxMetricsRetriever;
+import io.kafbat.ui.service.sainsburys.DynamoClusterProperties;
 import io.kafbat.ui.sr.ApiClient;
 import io.kafbat.ui.sr.api.KafkaSrClientApi;
 import io.kafbat.ui.util.KafkaServicesValidation;
@@ -50,16 +51,18 @@ public class KafkaClusterFactory {
 
   private final DataSize webClientMaxBuffSize;
   private final Duration responseTimeout;
+  private final DynamoClusterProperties dynamoClusterProperties;
   private final JmxMetricsRetriever jmxMetricsRetriever;
 
   public KafkaClusterFactory(WebclientProperties webclientProperties,
-                             JmxMetricsRetriever jmxMetricsRetriever) {
+                             JmxMetricsRetriever jmxMetricsRetriever, DynamoClusterProperties dynamoClusterProperties) {
     this.webClientMaxBuffSize = Optional.ofNullable(webclientProperties.getMaxInMemoryBufferSize())
         .map(DataSize::parse)
         .orElse(DEFAULT_WEBCLIENT_BUFFER);
     this.responseTimeout = Optional.ofNullable(webclientProperties.getResponseTimeoutMs())
         .map(Duration::ofMillis)
         .orElse(DEFAULT_RESPONSE_TIMEOUT);
+    this.dynamoClusterProperties = dynamoClusterProperties;
     this.jmxMetricsRetriever = jmxMetricsRetriever;
   }
 
@@ -73,6 +76,10 @@ public class KafkaClusterFactory {
     builder.consumerProperties(convertProperties(clusterProperties.getConsumerProperties()));
     builder.producerProperties(convertProperties(clusterProperties.getProducerProperties()));
     builder.readOnly(clusterProperties.isReadOnly());
+    List<ClustersProperties.Masking> maskingList = clusterProperties.getMasking();
+    maskingList.addAll(dynamoClusterProperties.retrieveDynamoMaskingToMaskingList(clusterProperties.getName()));
+
+    builder.masking(DataMasking.create(maskingList));
     builder.exposeMetricsViaPrometheusEndpoint(exposeMetricsViaPrometheusEndpoint(clusterProperties));
     builder.masking(DataMasking.create(clusterProperties.getMasking()));
     builder.pollingSettings(PollingSettings.create(clusterProperties, properties));
