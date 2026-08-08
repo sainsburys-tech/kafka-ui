@@ -3,6 +3,7 @@ package io.kafbat.ui.service;
 import io.kafbat.ui.config.ClustersProperties;
 import io.kafbat.ui.model.KafkaCluster;
 import io.kafbat.ui.model.SerdeDescriptionDTO;
+import io.kafbat.ui.model.TopicMessageDTO;
 import io.kafbat.ui.serde.api.SchemaDescription;
 import io.kafbat.ui.serde.api.Serde;
 import io.kafbat.ui.serdes.ClusterSerdes;
@@ -10,13 +11,16 @@ import io.kafbat.ui.serdes.ConsumerRecordDeserializer;
 import io.kafbat.ui.serdes.ProducerRecordCreator;
 import io.kafbat.ui.serdes.SerdeInstance;
 import io.kafbat.ui.serdes.SerdesInitializer;
+import io.kafbat.ui.service.sainsburys.DynamoClusterProperties;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.validation.ValidationException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -29,10 +33,16 @@ import org.springframework.stereotype.Component;
 public class DeserializationService implements Closeable {
 
   private final Map<String, ClusterSerdes> clusterSerdes = new ConcurrentHashMap<>();
+  private final DynamoClusterProperties dynamoClusterProperties;
+
+  @Value("${sainsburys.masking.feature.enabled: 'false' }")
+  private String isMaskingEnabled;
 
   public DeserializationService(Environment env,
                                 ClustersStorage clustersStorage,
-                                ClustersProperties clustersProperties) {
+                                ClustersProperties clustersProperties,
+                                DynamoClusterProperties dynamoClusterProperties) {
+    this.dynamoClusterProperties = dynamoClusterProperties;
     var serdesInitializer = new SerdesInitializer();
     for (int i = 0; i < clustersProperties.getClusters().size(); i++) {
       var clusterProperties = clustersProperties.getClusters().get(i);
@@ -99,6 +109,13 @@ public class DeserializationService implements Closeable {
     var keySerde = getSerdeForDeserialize(cluster, topic, Serde.Target.KEY, keySerdeName);
     var valueSerde = getSerdeForDeserialize(cluster, topic, Serde.Target.VALUE, valueSerdeName);
     var fallbackSerde = getSerdesFor(cluster).getFallbackSerde();
+    UnaryOperator<TopicMessageDTO> maskerForTopic;
+    if (Boolean.valueOf(isMaskingEnabled)) {
+      maskerForTopic = cluster.getMasking().getMaskerForTopic(topic,
+          dynamoClusterProperties.retrieveDynamoMasks(cluster.getName()));
+    } else {
+      maskerForTopic = cluster.getMasking().getMaskerForTopic(topic);
+    }
     return new ConsumerRecordDeserializer(
         keySerde.getName(),
         keySerde.deserializer(topic, Serde.Target.KEY),
@@ -107,7 +124,7 @@ public class DeserializationService implements Closeable {
         fallbackSerde.getName(),
         fallbackSerde.deserializer(topic, Serde.Target.KEY),
         fallbackSerde.deserializer(topic, Serde.Target.VALUE),
-        cluster.getMasking().getMaskerForTopic(topic)
+        maskerForTopic
     );
   }
 

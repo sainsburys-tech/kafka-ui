@@ -1,16 +1,26 @@
-package io.kafbat.ui.model.rbac;
+package io.kafbat.ui.model.sainsburys.dynamo;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBDocument;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperFieldModel;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTyped;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.kafbat.ui.model.rbac.provider.Provider;
 import java.util.Objects;
 import lombok.Data;
+import lombok.Getter;
 
 @Data
-public class Subject {
+@DynamoDBDocument
+public class DynamoSubject {
 
+  @Getter(onMethod_ = {
+      @DynamoDBTyped(DynamoDBMapperFieldModel.DynamoDBAttributeType.S),
+      @DynamoDBAttribute(attributeName = "provider")
+  })
   Provider provider;
   String type;
   String value;
